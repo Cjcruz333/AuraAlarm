@@ -5,4 +5,4 @@ Allow: /
 User-agent: Googlebot
 Allow: /
 
-Sitemap: https://auraalarm.com/sitemap.xml
+Sitemap: https://auraalarm.onrender.com/sitemap.xml
