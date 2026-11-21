@@ -5,10 +5,15 @@ import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import path from 'path';
 import { db, UPLOADS_DIR } from '../db.js';
-import { JWT_SECRET, authMiddleware, subscriberMiddleware } from '../middleware/auth.js';
+import { JWT_SECRET, authMiddleware, isAdminUser, subscriberMiddleware } from '../middleware/auth.js';
 import { createUniqueReferralCode, syncReferralRewards } from '../services/referrals.js';
 
 const router = express.Router();
+
+const toSafeUser = user => {
+  const { passwordHash: _, ...userSafe } = user;
+  return { ...userSafe, isAdmin: isAdminUser(user) };
+};
 
 // Setup multer for photo uploads
 const storage = multer.diskStorage({
@@ -139,8 +144,7 @@ router.post('/register', async (req, res) => {
     if (referrer) await syncReferralRewards(referrer.id);
     const token = signToken(newUser);
 
-    const { passwordHash: _, ...userSafe } = newUser;
-    res.status(201).json({ token, user: userSafe });
+    res.status(201).json({ token, user: toSafeUser(newUser) });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: 'Failed to register account' });
@@ -166,8 +170,7 @@ router.post('/login', async (req, res) => {
     }
 
     const token = signToken(user);
-    const { passwordHash: _, ...userSafe } = user;
-    res.json({ token, user: userSafe });
+    res.json({ token, user: toSafeUser(user) });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Login failed' });
@@ -198,8 +201,7 @@ router.post('/biometric/login', async (req, res) => {
     }
 
     const token = signToken(user);
-    const { passwordHash: _, ...userSafe } = user;
-    res.json({ token, user: userSafe, biometricVerified: true });
+    res.json({ token, user: toSafeUser(user), biometricVerified: true });
   } catch (err) {
     console.error('Biometric login error:', err);
     res.status(500).json({ error: 'Biometric verification failed' });
@@ -226,8 +228,10 @@ router.post('/biometric/register', subscriberMiddleware, async (req, res) => {
       biometricCredentials: [...existingCreds, newCred]
     });
 
-    const { passwordHash: _, ...userSafe } = updatedUser;
-    res.json({ message: 'Biometric credential enrolled successfully', user: userSafe });
+    res.json({
+      message: 'Biometric credential enrolled successfully',
+      user: toSafeUser(updatedUser)
+    });
   } catch (err) {
     console.error('Biometric enrollment error:', err);
     res.status(500).json({ error: 'Enrollment failed' });
@@ -239,8 +243,7 @@ router.get('/me', authMiddleware, (req, res) => {
   const user = db.findOne('users', u => u.id === req.user.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  const { passwordHash: _, ...userSafe } = user;
-  res.json({ user: userSafe });
+  res.json({ user: toSafeUser(user) });
 });
 
 // PUT /loved-one - Update loved one configuration

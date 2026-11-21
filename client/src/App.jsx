@@ -182,7 +182,7 @@ export default function App() {
         onOpenShare={handleOpenStreakShare}
         onOpenInstall={() => setIsInstallModalOpen(true)}
         onOpenUpgrade={openSubscription}
-        onOpenAdmin={() => setIsAdminModalOpen(true)}
+        onOpenAdmin={user?.isAdmin ? () => setIsAdminModalOpen(true) : undefined}
       />
 
       {isPreview && (
@@ -477,12 +477,13 @@ export default function App() {
       <UpgradeProModal
         isOpen={isUpgradeModalOpen}
         onClose={() => setIsUpgradeModalOpen(false)}
-        onOpenAdmin={() => setIsAdminModalOpen(true)}
+        onOpenAdmin={user?.isAdmin ? () => setIsAdminModalOpen(true) : undefined}
       />
 
       {/* Owner / Admin Payment Proof Verification Modal */}
       <AdminProofModal
         isOpen={isAdminModalOpen}
+        isAdmin={user?.isAdmin}
         onClose={() => setIsAdminModalOpen(false)}
       />
 

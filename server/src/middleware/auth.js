@@ -74,16 +74,22 @@ export const subscriberMiddleware = (req, res, next) => {
   });
 };
 
+export const isAdminUser = user => {
+  if (!user) return false;
+
+  const allowedAdmins = [
+    'okeke12347@gmail.com',
+    (process.env.ADMIN_EMAIL || '').trim().toLowerCase()
+  ].filter(Boolean);
+
+  return allowedAdmins.includes(user.email?.trim().toLowerCase()) || user.role === 'admin';
+};
+
 export const adminMiddleware = (req, res, next) => {
   authMiddleware(req, res, () => {
-    const allowedAdmins = [
-      'okeke12347@gmail.com',
-      (process.env.ADMIN_EMAIL || '').trim().toLowerCase()
-    ].filter(Boolean);
-
     const user = db.findOne('users', item => item.id === req.user.id);
-    if (!user || (!allowedAdmins.includes(user.email?.toLowerCase()) && user.role !== 'admin')) {
-      return res.status(403).json({ error: 'Admin access required. Please sign in as Okeke Chiemeria John.' });
+    if (!isAdminUser(user)) {
+      return res.status(403).json({ error: 'Admin access required' });
     }
 
     next();

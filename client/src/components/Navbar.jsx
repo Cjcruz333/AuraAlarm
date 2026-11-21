@@ -140,14 +140,15 @@ export const Navbar = ({
               <Mail className="w-4 h-4" />
             </button>
 
-            {/* Owner Portal / Review Proofs */}
-            <button
-              onClick={onOpenAdmin}
-              className="p-2 rounded-xl bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 transition-colors"
-              title="Owner Portal: Review Customer Payment Proofs (Fidelity Bank)"
-            >
-              <ShieldCheck className="w-4 h-4 text-amber-400" />
-            </button>
+            {user?.isAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="p-2 rounded-xl bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30 transition-colors"
+                title="Owner Portal: Review Customer Payment Proofs"
+              >
+                <ShieldCheck className="w-4 h-4 text-amber-400" />
+              </button>
+            )}
 
             {/* Biometric Authenticator Status */}
             <button
@@ -239,12 +240,14 @@ export const Navbar = ({
                 >
                   <Mail className="w-4 h-4" /> Support
                 </button>
-                <button
-                  onClick={() => { onOpenAdmin(); setIsMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"
-                >
-                  <ShieldCheck className="w-4 h-4" /> Owner portal
-                </button>
+                {user?.isAdmin && (
+                  <button
+                    onClick={() => { onOpenAdmin(); setIsMobileMenuOpen(false); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"
+                  >
+                    <ShieldCheck className="w-4 h-4" /> Owner portal
+                  </button>
+                )}
                 <button
                   onClick={() => { onOpenBiometrics(); setIsMobileMenuOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"

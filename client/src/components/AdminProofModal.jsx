@@ -15,12 +15,11 @@ import {
   AlertTriangle,
   ShieldAlert,
   Lock,
-  PhoneCall,
   Check
 } from 'lucide-react';
 import { api } from '../services/api.js';
 
-export const AdminProofModal = ({ isOpen, onClose }) => {
+export const AdminProofModal = ({ isOpen, isAdmin, onClose }) => {
   const [proofs, setProofs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -30,13 +29,13 @@ export const AdminProofModal = ({ isOpen, onClose }) => {
 
   // Dedicated In-App Rejection Modal State (Replaces broken browser prompt)
   const [rejectModalProof, setRejectModalProof] = useState(null);
-  const [rejectReason, setRejectReason] = useState('Fake Transfer - Funds not received in Fidelity Bank account 3004543080');
+  const [rejectReason, setRejectReason] = useState('Funds were not received in the bank account.');
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && isAdmin) {
       loadProofs();
     }
-  }, [isOpen]);
+  }, [isOpen, isAdmin]);
 
   const loadProofs = async ({ preserveMessage = false } = {}) => {
     setLoading(true);
@@ -53,7 +52,7 @@ export const AdminProofModal = ({ isOpen, onClose }) => {
   };
 
   const handleApprove = async (proofId) => {
-    if (!confirm('Are you sure you want to approve this payment and grant VIP Pro access to this user? Only approve after confirming the funds dropped into your Fidelity Bank account 3004543080.')) return;
+    if (!confirm('Are you sure you want to approve this payment and grant VIP Pro access? Only approve after independently confirming the funds arrived in your bank account.')) return;
     setProcessingId(proofId);
     setActionMsg('');
     try {
@@ -69,7 +68,7 @@ export const AdminProofModal = ({ isOpen, onClose }) => {
 
   const openRejectModal = (proof) => {
     setRejectModalProof(proof);
-    setRejectReason('Fake Transfer - Funds not received in Fidelity Bank account 3004543080');
+    setRejectReason('Funds were not received in the bank account.');
   };
 
   const handleConfirmReject = async () => {
@@ -94,7 +93,7 @@ export const AdminProofModal = ({ isOpen, onClose }) => {
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !isAdmin) return null;
 
   const filteredProofs = proofs.filter(p => {
     if (filter === 'pending') return p.status === 'pending_verification';
@@ -142,7 +141,7 @@ export const AdminProofModal = ({ isOpen, onClose }) => {
                   )}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Settlement Account: <strong className="text-amber-300">Fidelity Bank • 3004543080 (OKEKE CHIEMERIA JOHN)</strong>
+                  Payment review is restricted to authorized administrators.
                 </p>
               </div>
             </div>
@@ -176,11 +175,6 @@ export const AdminProofModal = ({ isOpen, onClose }) => {
               <span>Open Fidelity Online Banking</span>
               <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />
             </a>
-
-            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 font-mono text-[11px]">
-              <PhoneCall className="w-3.5 h-3.5 text-amber-400" />
-              <span>Phone USSD Balance Check: <strong>*770*0#</strong></span>
-            </div>
 
             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">
               <Lock className="w-3.5 h-3.5" />
@@ -409,7 +403,7 @@ export const AdminProofModal = ({ isOpen, onClose }) => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 mb-3">
                   {[
                     'Fake Transfer / Forged Receipt Slip',
-                    'No Credit Alert in Fidelity Bank (3004543080)',
+                    'No matching bank credit received',
                     'Invalid NIP Session ID',
                     'Incorrect Amount / Underpayment'
                   ].map((preset) => (
