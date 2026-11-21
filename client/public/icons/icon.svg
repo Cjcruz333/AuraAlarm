@@ -1,37 +1,79 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <defs>
-    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#1e1b4b" />
-      <stop offset="50%" stop-color="#0f172a" />
-      <stop offset="100%" stop-color="#020617" />
+    <radialGradient id="bg" cx="32%" cy="18%" r="92%">
+      <stop offset="0%" stop-color="#3530a8"/>
+      <stop offset="42%" stop-color="#171a54"/>
+      <stop offset="100%" stop-color="#080a1d"/>
+    </radialGradient>
+    <linearGradient id="ring" x1="82" y1="78" x2="430" y2="438" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#d5ceff"/>
+      <stop offset="38%" stop-color="#9a91ff"/>
+      <stop offset="72%" stop-color="#6964e8"/>
+      <stop offset="100%" stop-color="#4540b4"/>
     </linearGradient>
-    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#818cf8" />
-      <stop offset="50%" stop-color="#6366f1" />
-      <stop offset="100%" stop-color="#4f46e5" />
+    <linearGradient id="face" x1="150" y1="142" x2="358" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#252970"/>
+      <stop offset="100%" stop-color="#11143b"/>
     </linearGradient>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#6366f1" flood-opacity="0.4" />
+    <linearGradient id="gold" x1="200" y1="178" x2="330" y2="336" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#fff4b8"/>
+      <stop offset="48%" stop-color="#ffd66b"/>
+      <stop offset="100%" stop-color="#f6ad37"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="18" result="blur"/>
+      <feOffset dy="18" result="offset"/>
+      <feColorMatrix in="offset" type="matrix" values="0.04 0 0 0 0.05  0 0.04 0 0 0.06  0 0 0.24 0 0.31  0 0 0 0.75 0"/>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="10" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
 
-  <!-- Background rounded rect -->
-  <rect width="512" height="512" rx="128" fill="url(#bg)" />
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="256" cy="256" r="214" fill="none" stroke="#a9a3ff" stroke-opacity=".08" stroke-width="2"/>
+  <circle cx="256" cy="256" r="190" fill="none" stroke="#a9a3ff" stroke-opacity=".055" stroke-width="2"/>
 
-  <!-- Outer Ring -->
-  <circle cx="256" cy="276" r="148" fill="none" stroke="url(#glow)" stroke-width="24" stroke-linecap="round" filter="url(#shadow)" />
+  <!-- Dawn rays -->
+  <g stroke="#c9c4ff" stroke-width="10" stroke-linecap="round" opacity=".72">
+    <path d="M256 58v38"/>
+    <path d="M154 88l20 34"/>
+    <path d="M358 88l-20 34"/>
+  </g>
+  <circle cx="256" cy="98" r="8" fill="#fff0a8" filter="url(#softGlow)"/>
 
-  <!-- Alarm bells / top ears -->
-  <path d="M148 116 L96 168" stroke="#818cf8" stroke-width="24" stroke-linecap="round" />
-  <path d="M364 116 L416 168" stroke="#818cf8" stroke-width="24" stroke-linecap="round" />
+  <g filter="url(#shadow)">
+    <!-- Bell-shaped alarm crown -->
+    <path d="M128 176c8-48 47-82 90-96l12 26c-34 13-61 38-70 70z" fill="url(#ring)"/>
+    <path d="M384 176c-8-48-47-82-90-96l-12 26c34 13 61 38 70 70z" fill="url(#ring)"/>
 
-  <!-- Feet -->
-  <path d="M168 408 L136 448" stroke="#6366f1" stroke-width="20" stroke-linecap="round" />
-  <path d="M344 408 L376 448" stroke="#6366f1" stroke-width="20" stroke-linecap="round" />
+    <!-- Clock body -->
+    <circle cx="256" cy="276" r="158" fill="#090b26" stroke="#08091f" stroke-width="20"/>
+    <circle cx="256" cy="276" r="148" fill="url(#face)" stroke="url(#ring)" stroke-width="18"/>
+    <circle cx="256" cy="276" r="124" fill="none" stroke="#bcb6ff" stroke-opacity=".16" stroke-width="3"/>
 
-  <!-- Clock hands -->
-  <path d="M256 196 V276 L316 306" stroke="#ffffff" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Hour markers -->
+    <g fill="#dcd9ff" opacity=".92">
+      <circle cx="256" cy="178" r="7"/>
+      <circle cx="354" cy="276" r="7"/>
+      <circle cx="256" cy="374" r="7"/>
+      <circle cx="158" cy="276" r="7"/>
+    </g>
 
-  <!-- Heart / Loved one accent in center-top -->
-  <path d="M256 142 C256 142 244 126 232 126 C218 126 208 136 208 150 C208 168 234 186 256 200 C278 186 304 168 304 150 C304 136 294 126 280 126 C268 126 256 142 256 142 Z" fill="#f43f5e" />
+    <!-- Elegant Aura A + clock hands -->
+    <path d="M208 322l48-128 48 128" fill="none" stroke="url(#gold)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M225 276h62" fill="none" stroke="#fff1bd" stroke-width="12" stroke-linecap="round"/>
+    <path d="M256 276v-64" fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round"/>
+    <path d="M256 276l62 34" fill="none" stroke="#d9d5ff" stroke-width="13" stroke-linecap="round"/>
+    <circle cx="256" cy="276" r="18" fill="#fff" stroke="#ffd66b" stroke-width="8"/>
+
+    <!-- Feet -->
+    <path d="M166 397l-42 45c-12 13 5 31 20 20l64-50z" fill="#5d59cf"/>
+    <path d="M346 397l42 45c12 13-5 31-20 20l-64-50z" fill="#5d59cf"/>
+
+    <!-- Wake pulse, symbolizing sound and impact -->
+    <path d="M101 276c-20-16-20-42 0-58M411 218c20 16 20 42 0 58" fill="none" stroke="#9a91ff" stroke-width="13" stroke-linecap="round"/>
+  </g>
 </svg>
