@@ -1,0 +1,37 @@
+{
+  "name": "AuraAlarm | Smart Alarm & Wellness Suite",
+  "short_name": "AuraAlarm",
+  "description": "Minimalist, End-to-End Encrypted Smart Alarm, Loved One Morning Wake Screen, Fall Asleep Sounds & Circadian Fitness",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0d14",
+  "theme_color": "#0a0d14",
+  "orientation": "portrait",
+  "categories": ["health", "lifestyle", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Set Alarm",
+      "url": "/#alarms",
+      "description": "Quickly set a morning wake-up alarm"
+    },
+    {
+      "name": "Fall Asleep Sounds",
+      "url": "/#sleep",
+      "description": "Play soothing ambient sleep sounds"
+    }
+  ]
+}

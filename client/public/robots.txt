@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+# Googlebot & Bingbot crawling rules
+User-agent: Googlebot
+Allow: /
+
+Sitemap: https://auraalarm.com/sitemap.xml

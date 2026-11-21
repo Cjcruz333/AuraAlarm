@@ -1,0 +1,15 @@
+node_modules
+client/node_modules
+server/node_modules
+client/android
+client/ios
+**/.env
+**/.env.*
+!**/.env.example
+server/data
+server/uploads
+client/dist
+.git
+.vscode
+*.log
+*.bat

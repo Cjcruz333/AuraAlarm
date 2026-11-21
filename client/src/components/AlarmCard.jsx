@@ -1,0 +1,125 @@
+import React from 'react';
+import { Clock, Volume2, Heart, Play, Edit3, Trash2, CheckCircle2, Globe } from 'lucide-react';
+
+export const AlarmCard = ({ alarm, onToggle, onEdit, onDelete, onTest }) => {
+  const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  return (
+    <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300 border ${
+      alarm.active 
+        ? 'glass-card border-indigo-500/30 shadow-lg shadow-indigo-500/5' 
+        : 'bg-slate-900/40 border-slate-800/60 opacity-60'
+    }`}>
+      <div className="flex items-start justify-between gap-4">
+        
+        {/* Left: Time & Information */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-mono">
+              {alarm.time}
+            </span>
+            <span className="text-xs uppercase font-semibold text-slate-400">
+              {Number(alarm.time.split(':')[0]) >= 12 ? 'PM' : 'AM'}
+            </span>
+          </div>
+
+          <h3 className="text-base font-semibold text-slate-200 truncate mb-2">
+            {alarm.label || 'Alarm'}
+          </h3>
+
+          {/* Days tags */}
+          <div className="flex flex-wrap gap-1 mb-3.5">
+            {allDays.map(day => {
+              const isSelected = (alarm.days || []).includes(day);
+              return (
+                <span
+                  key={day}
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${
+                    isSelected
+                      ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
+                      : 'bg-slate-800/40 text-slate-500'
+                  }`}
+                >
+                  {day}
+                </span>
+              );
+            })}
+          </div>
+
+          {/* Meta badges: Sound & Loved One */}
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-800/80 border border-slate-700/60">
+              <Volume2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="truncate max-w-[140px]">{alarm.soundName || 'Gentle Chimes'}</span>
+            </span>
+
+            {alarm.timezone && alarm.timezone !== 'Local' && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/30 text-indigo-300">
+                <Globe className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="truncate max-w-[140px]">{alarm.timezone}</span>
+              </span>
+            )}
+
+            {alarm.photoUrl && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-pink-500/10 border border-pink-500/20 text-pink-300">
+                <Heart className="w-3.5 h-3.5 fill-pink-400 text-pink-400" />
+                <span>{alarm.lovedOneName || 'Custom Photo'}</span>
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Toggle Switch & Actions */}
+        <div className="flex flex-col items-end gap-3">
+          
+          {/* Active Toggle Switch */}
+          <button
+            onClick={() => onToggle(alarm.id)}
+            className={`w-13 h-7 flex items-center rounded-full p-1 transition-colors duration-200 ${
+              alarm.active ? 'bg-indigo-600' : 'bg-slate-800'
+            }`}
+            title={alarm.active ? 'Disable alarm' : 'Enable alarm'}
+          >
+            <div
+              className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-200 ${
+                alarm.active ? 'translate-x-6' : 'translate-x-0'
+              }`}
+            />
+          </button>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1 mt-2">
+            {/* Test Alarm Preview Button */}
+            <button
+              onClick={() => onTest(alarm)}
+              className="p-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/20 transition-colors"
+              title="Test Alarm Screen Preview"
+            >
+              <Play className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Edit */}
+            <button
+              onClick={() => onEdit(alarm)}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+              title="Edit Alarm"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+            </button>
+
+            {/* Delete */}
+            <button
+              onClick={() => onDelete(alarm.id)}
+              className="p-2 rounded-xl bg-slate-800 hover:bg-rose-950/60 text-slate-400 hover:text-rose-400 transition-colors"
+              title="Delete Alarm"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+};
