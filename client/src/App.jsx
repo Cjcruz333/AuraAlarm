@@ -11,7 +11,10 @@ import {
   AlertCircle,
   HelpCircle,
   Volume2,
-  Crown
+  Crown,
+  Shield,
+  Mail,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 import { useAlarm } from './context/AlarmContext.jsx';
@@ -609,38 +612,46 @@ export default function App() {
             <span>• Next-Gen Alarm, Sleep & Wellness Platform</span>
           </div>
 
-          <div className="flex items-center gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <button
               onClick={openSubscription}
-              className="text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1 font-semibold"
+              aria-label="Aura Pro VIP"
+              title="Aura Pro VIP"
+              className="p-2.5 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-slate-800/80 transition-colors"
             >
-              <Crown className="w-3.5 h-3.5 fill-amber-400" />
-              <span>Aura Pro VIP</span>
+              <Crown className="w-5 h-5 fill-amber-400" />
             </button>
             <button
               onClick={() => setIsAdminModalOpen(true)}
-              className="hover:text-amber-400 transition-colors flex items-center gap-1 font-medium"
+              aria-label="Owner Portal"
+              title="Owner Portal"
+              className="p-2.5 rounded-lg text-slate-400 hover:text-amber-400 hover:bg-slate-800/80 transition-colors"
             >
-              <span>Owner Portal</span>
+              <Shield className="w-5 h-5" />
             </button>
             <button
               onClick={() => setIsFeedbackModalOpen(true)}
-              className="hover:text-indigo-400 transition-colors"
+              aria-label="Support: okeke12347@gmail.com"
+              title="Support: okeke12347@gmail.com"
+              className="p-2.5 rounded-lg text-slate-400 hover:text-indigo-400 hover:bg-slate-800/80 transition-colors"
             >
-              Support: <strong className="text-slate-300">okeke12347@gmail.com</strong>
+              <Mail className="w-5 h-5" />
             </button>
             <button
               onClick={() => setIsBiometricModalOpen(true)}
-              className="hover:text-emerald-400 transition-colors flex items-center gap-1"
+              aria-label="E2EE 256-Bit"
+              title="E2EE 256-Bit"
+              className="p-2.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-slate-800/80 transition-colors"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>E2EE 256-Bit</span>
+              <ShieldCheck className="w-5 h-5" />
             </button>
             <button
               onClick={() => setIsCalendarModalOpen(true)}
-              className="hover:text-slate-200 transition-colors"
+              aria-label="iCal Sync"
+              title="iCal Sync"
+              className="p-2.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-colors"
             >
-              iCal Sync
+              <Calendar className="w-5 h-5" />
             </button>
           </div>
         </div>
