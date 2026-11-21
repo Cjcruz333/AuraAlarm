@@ -63,6 +63,8 @@ const POPULAR_BANKS = [
   'Other Bank / International Wire'
 ];
 
+const FIDELITY_ACCOUNT_NUMBER = '3004543080';
+
 export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
   const { user, setUser, refreshUser } = useAuth();
   
@@ -74,6 +76,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
   // Bank details state
   const [copiedAccount, setCopiedAccount] = useState(false);
   const [copiedUssd, setCopiedUssd] = useState(false);
+  const [copyError, setCopyError] = useState('');
 
   // Proof of Payment Form State (REQUIRED for Fidelity Bank)
   const [senderName, setSenderName] = useState('');
@@ -96,6 +99,22 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
   // Loading & error
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  const copyText = async (value, setCopied) => {
+    setCopied(false);
+    setCopyError('');
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error('Clipboard access is not available');
+      }
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch (err) {
+      console.error('Clipboard copy failed:', err);
+      setCopyError('Could not copy. Please select and copy the text manually.');
+    }
+  };
 
   // Auto-detect visitor's country and local currency from browser timezone
   useEffect(() => {
@@ -657,40 +676,37 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                     </div>
 
                     {/* Account Number with 1-Click Copy */}
-                    <div className="p-3.5 rounded-xl bg-slate-950 border-2 border-amber-500/40 flex items-center justify-between gap-3">
-                      <div>
+                    <div className="p-3.5 rounded-xl bg-slate-950 border-2 border-amber-500/40 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="min-w-0">
                         <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">
                           Account Number
                         </span>
-                        <span className="text-2xl font-extrabold text-amber-400 font-mono tracking-widest">
-                          3004543080
+                        <span className="text-xl sm:text-2xl font-extrabold text-amber-400 font-mono tracking-[0.16em] sm:tracking-widest whitespace-nowrap">
+                          {FIDELITY_ACCOUNT_NUMBER}
                         </span>
                       </div>
 
                       <button
                         type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText('3004543080');
-                          setCopiedAccount(true);
-                          setTimeout(() => setCopiedAccount(false), 3000);
-                        }}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all active:scale-95 shrink-0"
+                        onClick={() => copyText(FIDELITY_ACCOUNT_NUMBER, setCopiedAccount)}
+                        className="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all active:scale-95 shrink-0"
                       >
                         {copiedAccount ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
                         <span>{copiedAccount ? 'Copied!' : 'Copy Number'}</span>
                       </button>
                     </div>
+                    {copyError && (
+                      <p role="alert" className="text-[11px] text-rose-300">
+                        {copyError}
+                      </p>
+                    )}
 
                     {/* USSD Quick Dial */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 gap-1">
-                      <span>💡 <strong>Quick USSD:</strong> Dial <code className="text-amber-300 font-mono">*770*3004543080*AMOUNT#</code></span>
+                      <span>💡 <strong>Quick USSD:</strong> Dial <code className="text-amber-300 font-mono">*770*{FIDELITY_ACCOUNT_NUMBER}*AMOUNT#</code></span>
                       <button
                         type="button"
-                        onClick={() => {
-                          navigator.clipboard.writeText('*770*3004543080#');
-                          setCopiedUssd(true);
-                          setTimeout(() => setCopiedUssd(false), 3000);
-                        }}
+                        onClick={() => copyText(`*770*${FIDELITY_ACCOUNT_NUMBER}#`, setCopiedUssd)}
                         className="text-amber-400 hover:underline flex items-center gap-1 font-semibold text-[11px]"
                       >
                         {copiedUssd ? 'USSD Copied!' : 'Copy USSD Code'}

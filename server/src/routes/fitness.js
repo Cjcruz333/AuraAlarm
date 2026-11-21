@@ -8,6 +8,21 @@ const router = express.Router();
 // Curated Fitness Programs
 const WORKOUT_PLANS = [
   {
+    id: 'plan_morning_full_body_15',
+    title: '15-Minute No-Equipment Full-Body Circuit',
+    duration: '15 Mins',
+    level: 'Beginner / All Levels',
+    focus: 'Low-impact strength and mobility for a consistent morning routine at home.',
+    exercises: [
+      { name: 'Low-Impact March and Reach', durationSec: 120, reps: 'Easy steady pace', tip: 'Take soft steps and swing your arms comfortably.' },
+      { name: 'Bodyweight Squats', durationSec: 180, reps: '8-12 reps; rest as needed', tip: 'Use a comfortable depth and keep your knees tracking over your toes.' },
+      { name: 'Wall Push-Ups', durationSec: 180, reps: '8-12 reps; rest as needed', tip: 'Keep your body in a straight line and move at a controlled pace.' },
+      { name: 'Glute Bridges', durationSec: 180, reps: '10-12 reps; rest as needed', tip: 'Lift your hips comfortably without arching your lower back.' },
+      { name: 'Bird-Dog Alternations', durationSec: 120, reps: '8-10 per side', tip: 'Extend opposite arm and leg while keeping your back steady.' },
+      { name: 'Standing Calf Raises and Arm Raises', durationSec: 120, reps: '10-12 reps; rest as needed', tip: 'Rise smoothly and keep the movement comfortable.' }
+    ]
+  },
+  {
     id: 'plan_morning_mobility',
     title: 'Sunrise Energy & Joint Mobility',
     duration: '10 Mins',

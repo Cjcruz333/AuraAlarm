@@ -143,7 +143,7 @@ export const FitnessTracker = () => {
               Personalized Workouts & Fuel
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 max-w-xl mt-1">
-              Kickstart dopamine, cortisol regulation, and mitochondrial energy directly after waking up to cement your daily streak.
+              A 15-minute, no-equipment full-body circuit is the best way to build a consistent morning habit at home. It wakes up stiff muscles, boosts circulation, and builds foundational strength without overwhelming your joints.
             </p>
           </div>
 

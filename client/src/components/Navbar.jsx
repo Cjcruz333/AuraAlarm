@@ -47,6 +47,13 @@ export const Navbar = ({
     month: 'short',
     day: 'numeric'
   });
+  const greeting = currentTime.getHours() < 12
+    ? 'Good morning'
+    : currentTime.getHours() < 17
+      ? 'Good afternoon'
+      : 'Good evening';
+  const displayName = user?.name?.trim() || user?.username || '';
+  const firstName = displayName.split(/\s+/)[0];
 
   const navItems = [
     { id: 'alarms', label: 'Alarms', icon: Bell },
@@ -79,8 +86,15 @@ export const Navbar = ({
                     E2EE
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-xs text-slate-400 font-medium whitespace-nowrap">
-                  <span className="hidden sm:inline">{formattedDate} • </span><span className="text-slate-200 font-semibold">{formattedTime}</span>
+                <p
+                  className="text-[10px] sm:text-xs text-slate-400 font-medium truncate"
+                  title={user ? `${greeting}, ${displayName}` : formattedTime}
+                >
+                  <span className="hidden sm:inline">{formattedDate} • </span>
+                  <span className="text-slate-200 font-semibold">
+                    {user ? `${greeting}, ${firstName}` : formattedTime}
+                  </span>
+                  {user && <span className="hidden sm:inline"> • {formattedTime}</span>}
                 </p>
               </div>
             </div>

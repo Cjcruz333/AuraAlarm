@@ -45,7 +45,7 @@ export const FeedbackSupportModal = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-      <div className="relative w-full max-w-lg glass-panel border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl">
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto overscroll-contain glass-panel border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl">
         
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
@@ -174,7 +174,7 @@ export const FeedbackSupportModal = ({ isOpen, onClose }) => {
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2">
+            <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-1">
                 <span className="text-xs text-slate-400 mr-2">Experience:</span>
                 {[1, 2, 3, 4, 5].map((star) => (
@@ -189,18 +189,18 @@ export const FeedbackSupportModal = ({ isOpen, onClose }) => {
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300"
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-slate-800 text-xs font-semibold text-slate-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex items-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/30 transition-all active:scale-95 whitespace-nowrap"
                 >
                   <Send className="w-3.5 h-3.5" />
                   <span>{isSubmitting ? 'Sending...' : 'Send Message'}</span>
