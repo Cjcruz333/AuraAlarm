@@ -6,3 +6,4 @@ server/data/
 server/uploads/
 client/dist/
 .neon
+.env.local

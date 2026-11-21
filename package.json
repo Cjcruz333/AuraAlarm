@@ -11,5 +11,9 @@
     "cap:android": "cd client && npx cap open android",
     "cap:ios": "cd client && npx cap open ios",
     "deploy:google": "node scripts/publish-to-google-play.js"
+  },
+  "dependencies": {
+    "@neon/config": "^1.14.5",
+    "@neon/env": "^2.1.8"
   }
 }

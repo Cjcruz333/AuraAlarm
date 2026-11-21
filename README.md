@@ -135,6 +135,8 @@ Before deploying, configure these environment variables:
 - `PAYSTACK_SECRET_KEY`: optional; required for server-side card-payment verification.
 - `VITE_PAYSTACK_PUBLIC_KEY`: optional; set when building the client to enable Paystack checkout.
 
+The Neon CLI stores local connection variables in the root `.env.local`; the server start scripts load that file and `server/.env` without printing their values. Keep both files out of source control.
+
 If Paystack is not configured, customers can submit bank-transfer proofs for manual review. An authorized admin must confirm the money actually arrived in the Fidelity account before approving; uploaded receipts and reference-number format checks are not bank verification. The app does not currently have a Fidelity Bank API/webhook integration, so Fidelity itself does not approve or reject transfers through this app. A direct bank integration requires official Fidelity business/API access, documentation, and credentials. Do not put the Paystack secret key in the client or expose it in browser code.
 
 ### 1. Installation
