@@ -60,7 +60,7 @@ export const Navbar = ({
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80">
+    <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 pwa-safe-area-top">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between gap-2 h-16 lg:h-20">
           

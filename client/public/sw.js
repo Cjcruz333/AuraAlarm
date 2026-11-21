@@ -1,6 +1,6 @@
 // Service Worker for AuraAlarm Progressive Web App
 
-const CACHE_NAME = 'aura-alarm-v2';
+const CACHE_NAME = 'aura-alarm-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -33,12 +33,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request, { cache: 'no-store' })
+        .then(async (response) => {
+          if (response.ok) {
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put('/index.html', response.clone());
+          }
+          return response;
+        })
+        .catch(() => caches.match('/index.html'))
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       return cachedResponse || fetch(event.request).catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
+        return undefined;
       });
     })
   );
