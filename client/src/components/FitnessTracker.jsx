@@ -18,6 +18,8 @@ import confetti from 'canvas-confetti';
 
 export const FitnessTracker = () => {
   const [plans, setPlans] = useState([]);
+  const [plansError, setPlansError] = useState('');
+  const [isLoadingPlans, setIsLoadingPlans] = useState(true);
   const [nutrition, setNutrition] = useState(null);
   const [activeWorkout, setActiveWorkout] = useState(null);
   const [currentExerciseIdx, setCurrentExerciseIdx] = useState(0);
@@ -31,34 +33,26 @@ export const FitnessTracker = () => {
   }, []);
 
   const loadFitnessData = async () => {
-    try {
-      const [plansRes, nutRes] = await Promise.all([
-        api.getFitnessPlans(),
-        api.getNutrition()
-      ]);
-      setPlans(plansRes.plans || []);
-      setNutrition(nutRes.nutrition || null);
-    } catch (err) {
-      console.warn('Fitness load notice:', err);
+    const [plansResult, nutritionResult] = await Promise.allSettled([
+      api.getFitnessPlans(),
+      api.getNutrition()
+    ]);
+
+    if (plansResult.status === 'fulfilled') {
+      setPlans(plansResult.value.plans || []);
+      setPlansError('');
+    } else {
+      console.error('Fitness plans load error:', plansResult.reason);
+      setPlansError('Workout plans could not be loaded. Please try again.');
+    }
+    setIsLoadingPlans(false);
+
+    if (nutritionResult.status === 'fulfilled') {
+      setNutrition(nutritionResult.value.nutrition || null);
+    } else {
+      console.warn('Nutrition data is unavailable:', nutritionResult.reason);
     }
   };
-
-  // Workout Timer Tick
-  useEffect(() => {
-    let interval = null;
-    if (isTimerRunning && timerSeconds > 0) {
-      interval = setInterval(() => {
-        setTimerSeconds(prev => {
-          if (prev <= 1) {
-            handleNextExercise();
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds]);
 
   const startWorkout = (plan) => {
     setActiveWorkout(plan);
@@ -82,21 +76,37 @@ export const FitnessTracker = () => {
   };
 
   const completeWorkoutSession = async () => {
+    if (!activeWorkout) return;
+    const completedWorkout = activeWorkout;
     try {
       confetti({ particleCount: 100, spread: 80, origin: { y: 0.5 } });
       await api.completeWorkout({
-        planId: activeWorkout.id,
-        planTitle: activeWorkout.title,
-        durationMinutes: parseInt(activeWorkout.duration) || 12,
+        planId: completedWorkout.id,
+        planTitle: completedWorkout.title,
+        durationMinutes: parseInt(completedWorkout.duration) || 12,
         caloriesBurned: 110
       });
-      alert(`🎉 Phenomenal job! You finished "${activeWorkout.title}". Caloric burn & consistency milestone registered!`);
+      alert(`🎉 Great work! You finished "${completedWorkout.title}" and your workout was saved.`);
       setActiveWorkout(null);
       loadFitnessData();
     } catch (err) {
       console.error('Complete workout error:', err);
+      alert(`Workout complete! We couldn't save this session. Check your connection or sign in with an active subscription to save progress.`);
+    } finally {
+      setActiveWorkout(null);
     }
   };
+
+  useEffect(() => {
+    if (!isTimerRunning || !activeWorkout) return undefined;
+    if (timerSeconds <= 0) {
+      handleNextExercise();
+      return undefined;
+    }
+
+    const timeout = setTimeout(() => setTimerSeconds(timerSeconds - 1), 1000);
+    return () => clearTimeout(timeout);
+  }, [isTimerRunning, timerSeconds, activeWorkout, currentExerciseIdx]);
 
   const handleWaterClick = async (change) => {
     try {
@@ -180,7 +190,10 @@ export const FitnessTracker = () => {
               <h3 className="text-xl font-bold text-white">{activeWorkout.title}</h3>
             </div>
             <button
-              onClick={() => setActiveWorkout(null)}
+              onClick={() => {
+                setIsTimerRunning(false);
+                setActiveWorkout(null);
+              }}
               className="text-xs font-semibold text-slate-400 hover:text-white px-3 py-1.5 rounded-xl bg-slate-800"
             >
               Exit Routine
@@ -243,6 +256,25 @@ export const FitnessTracker = () => {
           <span className="text-xs text-slate-400">Scientifically calibrated for wake & sleep</span>
         </div>
 
+        {plansError ? (
+          <div role="alert" className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-5 text-sm text-rose-200">
+            <p>{plansError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLoadingPlans(true);
+                loadFitnessData();
+              }}
+              className="mt-3 rounded-lg bg-rose-500/20 px-3 py-1.5 text-xs font-semibold hover:bg-rose-500/30"
+            >
+              Try again
+            </button>
+          </div>
+        ) : isLoadingPlans ? (
+          <p className="text-sm text-slate-400">Loading workout plans...</p>
+        ) : plans.length === 0 ? (
+          <p className="text-sm text-slate-400">No workout plans are available right now.</p>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           {plans.map((plan) => (
             <div
@@ -261,17 +293,12 @@ export const FitnessTracker = () => {
 
                 {/* Exercises list summary */}
                 <div className="space-y-1.5 mb-4">
-                  {plan.exercises.slice(0, 3).map((ex, i) => (
+                  {plan.exercises.map((ex, i) => (
                     <div key={i} className="flex items-center text-xs text-slate-300 gap-1.5">
                       <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
                       <span className="truncate">{ex.name}</span>
                     </div>
                   ))}
-                  {plan.exercises.length > 3 && (
-                    <span className="text-[10px] text-slate-500 pl-3">
-                      +{plan.exercises.length - 3} more dynamic movements
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -285,6 +312,7 @@ export const FitnessTracker = () => {
             </div>
           ))}
         </div>
+        )}
       </div>
 
       {/* NUTRITION & HYDRATION DASHBOARD */}

@@ -53,7 +53,7 @@ app.use('/api/sleep', subscriberMiddleware, sleepRoutes);
 app.use('/api/location', subscriberMiddleware, locationRoutes);
 app.use('/api/calendar', subscriberMiddleware, calendarRoutes);
 app.use('/api/loved-ones', subscriberMiddleware, lovedOneRoutes);
-app.use('/api/fitness', subscriberMiddleware, fitnessRoutes);
+app.use('/api/fitness', fitnessRoutes);
 app.use('/api/stats', subscriberMiddleware, statsRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);

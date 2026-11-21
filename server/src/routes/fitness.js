@@ -1,7 +1,7 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { db } from '../db.js';
-import { authMiddleware } from '../middleware/auth.js';
+import { authMiddleware, subscriberMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -9,17 +9,40 @@ const router = express.Router();
 const WORKOUT_PLANS = [
   {
     id: 'plan_morning_full_body_15',
-    title: '15-Minute No-Equipment Full-Body Circuit',
+    title: '15-Minute No-Equipment Full-Body Workout',
     duration: '15 Mins',
     level: 'Beginner / All Levels',
-    focus: 'Low-impact strength and mobility for a consistent morning routine at home.',
+    focus: 'A balanced home workout with low-impact options for every movement.',
     exercises: [
-      { name: 'Low-Impact March and Reach', durationSec: 120, reps: 'Easy steady pace', tip: 'Take soft steps and swing your arms comfortably.' },
-      { name: 'Bodyweight Squats', durationSec: 180, reps: '8-12 reps; rest as needed', tip: 'Use a comfortable depth and keep your knees tracking over your toes.' },
-      { name: 'Wall Push-Ups', durationSec: 180, reps: '8-12 reps; rest as needed', tip: 'Keep your body in a straight line and move at a controlled pace.' },
-      { name: 'Glute Bridges', durationSec: 180, reps: '10-12 reps; rest as needed', tip: 'Lift your hips comfortably without arching your lower back.' },
-      { name: 'Bird-Dog Alternations', durationSec: 120, reps: '8-10 per side', tip: 'Extend opposite arm and leg while keeping your back steady.' },
-      { name: 'Standing Calf Raises and Arm Raises', durationSec: 120, reps: '10-12 reps; rest as needed', tip: 'Rise smoothly and keep the movement comfortable.' }
+      { name: 'March in Place and Arm Swings', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'Start gently and use this time to warm up.' },
+      { name: 'Jumping Jacks or Step Jacks', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'For a low-impact option, step one foot out at a time.' },
+      { name: 'Push-Ups or Knee Push-Ups', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'Use a wall or sturdy counter for an easier push-up.' },
+      { name: 'Bodyweight Squats', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'Sit back to a comfortable depth and keep your knees aligned with your toes.' },
+      { name: 'Reverse Lunges', durationSec: 90, reps: '30 seconds alternating, 15 seconds rest; repeat twice', tip: 'Hold a chair for balance or step back without lowering deeply.' },
+      { name: 'Mountain Climbers', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'Slow the pace or do standing wall mountain climbers.' },
+      { name: 'Glute Bridges', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'Lift your hips smoothly while keeping your lower back comfortable.' },
+      { name: 'Plank Shoulder Taps', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'Do the taps from your knees or against a wall if needed.' },
+      { name: 'High Knees or Brisk March', durationSec: 90, reps: '30 seconds moving, 15 seconds rest; repeat twice', tip: 'March instead of jogging to keep it low impact.' },
+      { name: 'Standing Full-Body Stretch', durationSec: 90, reps: 'Gentle stretches and steady breathing', tip: 'Move slowly and stop if a stretch feels painful.' }
+    ]
+  },
+  {
+    id: 'plan_full_body_30',
+    title: '30-Minute Full-Body Workout',
+    duration: '30 Mins',
+    level: 'Beginner / Intermediate',
+    focus: 'A longer no-equipment routine with rest built into each exercise.',
+    exercises: [
+      { name: 'March in Place and Arm Swings', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'Use an easy pace to warm up.' },
+      { name: 'Jumping Jacks or Step Jacks', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'Step out one foot at a time for a low-impact option.' },
+      { name: 'Push-Ups or Knee Push-Ups', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'Use a wall or sturdy counter for an easier push-up.' },
+      { name: 'Bodyweight Squats', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'Choose a comfortable depth and keep your knees aligned with your toes.' },
+      { name: 'Reverse Lunges', durationSec: 180, reps: '40 seconds alternating, 20 seconds rest; repeat three times', tip: 'Hold a chair for balance or use a shorter step.' },
+      { name: 'Mountain Climbers', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'Slow down or use standing wall mountain climbers.' },
+      { name: 'Glute Bridges', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'Lift smoothly without arching your lower back.' },
+      { name: 'Plank Shoulder Taps', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'Do the taps from your knees or against a wall.' },
+      { name: 'High Knees or Brisk March', durationSec: 180, reps: '40 seconds moving, 20 seconds rest; repeat three times', tip: 'March rather than jog to lower the impact.' },
+      { name: 'Standing Full-Body Stretch', durationSec: 180, reps: 'Gentle stretches and steady breathing', tip: 'Stretch gently and stop if you feel pain.' }
     ]
   },
   {
@@ -29,25 +52,25 @@ const WORKOUT_PLANS = [
     level: 'All Levels',
     focus: 'Wake Up Body, Reduce Stiffness, Boost Circulation',
     exercises: [
-      { name: 'Cat-Cow Spinal Activation', durationSec: 60, reps: '10 cycles', tip: 'Inhale deeply as belly dips, exhale as spine arches.' },
-      { name: 'World\'s Greatest Stretch', durationSec: 90, reps: '5 per side', tip: 'Step into deep lunge, rotate chest towards sky.' },
-      { name: 'Dynamic Standing Arm Sweeps', durationSec: 60, reps: '15 reps', tip: 'Open chest, expand ribcage to oxygenate blood.' },
-      { name: 'Bodyweight Air Squats', durationSec: 90, reps: '15 reps', tip: 'Keep chest proud and drive through heels.' },
-      { name: 'Gentle Child\'s Pose to Cobra', durationSec: 90, reps: '6 cycles', tip: 'Release lower back and wake spine.' }
+      { name: 'Cat-Cow Spinal Activation', durationSec: 120, reps: 'Move gently for 2 minutes', tip: 'Inhale as your belly dips and exhale as your spine arches.' },
+      { name: 'World\'s Greatest Stretch', durationSec: 120, reps: 'Alternate sides for 2 minutes', tip: 'Use a comfortable lunge depth and rotate gently.' },
+      { name: 'Dynamic Standing Arm Sweeps', durationSec: 120, reps: 'Move gently for 2 minutes', tip: 'Open your chest without forcing your shoulders.' },
+      { name: 'Bodyweight Air Squats', durationSec: 120, reps: 'Move gently for 2 minutes', tip: 'Keep your chest comfortable and use a range that feels good.' },
+      { name: 'Gentle Child\'s Pose to Cobra', durationSec: 120, reps: 'Move gently for 2 minutes', tip: 'Move between poses slowly and stop if uncomfortable.' }
     ]
   },
   {
     id: 'plan_hiit_ignition',
-    title: 'Metabolic Dawn Spark (HIIT)',
-    duration: '15 Mins',
+    title: '5-Minute Metabolic Spark (HIIT)',
+    duration: '5 Mins',
     level: 'Intermediate',
     focus: 'Cardio Boost, Fat Oxidation & Dopamine Release',
     exercises: [
-      { name: 'Jumping Jacks / Step Jacks', durationSec: 45, reps: '45s Work', tip: 'Land softly on balls of feet.' },
-      { name: 'High Knees or March in Place', durationSec: 45, reps: '45s Work', tip: 'Pump opposite arms in rhythm.' },
-      { name: 'Plank Hold with Shoulder Taps', durationSec: 45, reps: '45s Work', tip: 'Keep hips completely stable.' },
-      { name: 'Reverse Lunges with Reach', durationSec: 45, reps: '45s Work', tip: 'Alternating sides, maintain tall posture.' },
-      { name: 'Mountain Climbers', durationSec: 45, reps: '45s Work', tip: 'Drive knees rhythmically toward chest.' }
+      { name: 'Jumping Jacks / Step Jacks', durationSec: 60, reps: '30 seconds moving, 30 seconds rest', tip: 'Land softly or step side to side.' },
+      { name: 'High Knees or March in Place', durationSec: 60, reps: '30 seconds moving, 30 seconds rest', tip: 'Pump opposite arms or keep it to a brisk march.' },
+      { name: 'Plank Hold with Shoulder Taps', durationSec: 60, reps: '30 seconds moving, 30 seconds rest', tip: 'Use your knees and keep your hips steady.' },
+      { name: 'Reverse Lunges with Reach', durationSec: 60, reps: '30 seconds alternating, 30 seconds rest', tip: 'Alternate sides and keep a comfortable stance.' },
+      { name: 'Mountain Climbers', durationSec: 60, reps: '30 seconds moving, 30 seconds rest', tip: 'Move slowly or use the standing wall variation.' }
     ]
   },
   {
@@ -58,8 +81,8 @@ const WORKOUT_PLANS = [
     focus: 'Parasympathetic Activation & Deep Sleep Prep',
     exercises: [
       { name: 'Legs Up the Wall (Viparita Karani)', durationSec: 180, reps: 'Hold 3m', tip: 'Drain lymphatic fluid, slow heart rate.' },
-      { name: 'Supine Spinal Twist', durationSec: 120, reps: '1m each side', tip: 'Breathe into diaphragm as shoulders stay pinned.' },
-      { name: 'Reclining Butterfly Pose', durationSec: 120, reps: 'Hold 2m', tip: 'Relax hips and inner thighs.' },
+      { name: 'Supine Spinal Twist', durationSec: 180, reps: '90 seconds each side', tip: 'Breathe slowly and keep your shoulders relaxed.' },
+      { name: 'Reclining Butterfly Pose', durationSec: 180, reps: 'Hold for 3 minutes', tip: 'Relax your hips and inner thighs without forcing the stretch.' },
       { name: '4-7-8 Deep Box Breathing', durationSec: 180, reps: 'Hold 3m', tip: 'Inhale 4s, hold 7s, exhale slowly 8s.' }
     ]
   }
@@ -69,6 +92,8 @@ const WORKOUT_PLANS = [
 router.get('/plans', (req, res) => {
   res.json({ plans: WORKOUT_PLANS });
 });
+
+router.use(subscriberMiddleware);
 
 // GET /fitness/logs - User workout history
 router.get('/logs', authMiddleware, (req, res) => {
