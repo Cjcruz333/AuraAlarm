@@ -1,16 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { X, Fingerprint, Lock, ShieldCheck, User, Mail, Sparkles, CheckCircle2 } from 'lucide-react';
+import { X, Fingerprint, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
+import { api } from '../services/api.js';
 import confetti from 'canvas-confetti';
 
-export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric' }) => {
-  const { user, loginBiometric, enrollBiometrics, login, register, isBiometricSupported, logout } = useAuth();
-  const [tab, setTab] = useState('biometric'); // 'biometric' | 'login' | 'register'
+export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', resetToken = '', onResetComplete }) => {
+  const { user, loginBiometric, enrollBiometrics, login, register, logout } = useAuth();
+  const [tab, setTab] = useState(initialTab);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [referralCode, setReferralCode] = useState(() => new URLSearchParams(window.location.search).get('ref') || '');
   const [statusMsg, setStatusMsg] = useState('');
+  const [passwordResetMessage, setPasswordResetMessage] = useState('');
+  const [passwordResetError, setPasswordResetError] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -83,6 +88,56 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric' }
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    setIsProcessing(true);
+    setPasswordResetMessage('');
+    setPasswordResetError(false);
+    try {
+      const result = await api.requestPasswordReset(email);
+      setPasswordResetMessage(result.message);
+    } catch (err) {
+      setPasswordResetMessage(err.message || 'Could not request a password reset.');
+      setPasswordResetError(true);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    if (newPassword !== confirmNewPassword) {
+      setPasswordResetMessage('The passwords do not match.');
+      setPasswordResetError(true);
+      return;
+    }
+
+    setIsProcessing(true);
+    setPasswordResetMessage('');
+    setPasswordResetError(false);
+    try {
+      const result = await api.resetPassword(resetToken, newPassword);
+      onResetComplete?.();
+      setPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setTab('login');
+      setPasswordResetMessage(result.message);
+    } catch (err) {
+      setPasswordResetMessage(err.message || 'Could not reset the password.');
+      setPasswordResetError(true);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const openForgotPassword = () => {
+    setEmail(username.includes('@') ? username : '');
+    setPasswordResetMessage('');
+    setPasswordResetError(false);
+    setTab('forgot');
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
       <div className="relative w-full max-w-md glass-panel border border-slate-700 rounded-3xl p-6 sm:p-8 shadow-2xl">
@@ -91,7 +146,9 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric' }
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
           <div className="flex items-center gap-2">
             <Fingerprint className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-lg font-bold text-white">Biometric Security & Passkeys</h3>
+            <h3 className="text-lg font-bold text-white">
+              {tab === 'forgot' ? 'Forgot Password' : tab === 'reset' ? 'Choose a New Password' : 'Biometric Security & Passkeys'}
+            </h3>
           </div>
           <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
@@ -99,7 +156,7 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric' }
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
+        {!['forgot', 'reset'].includes(tab) && <div className="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
           <button
             onClick={() => setTab('biometric')}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
@@ -124,7 +181,7 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric' }
           >
             Create Account
           </button>
-        </div>
+        </div>}
 
         {/* TAB 1: BIOMETRIC LOGIN & ENROLLMENT */}
         {tab === 'biometric' && (
@@ -184,6 +241,11 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric' }
         {/* TAB 2: STANDARD LOGIN */}
         {tab === 'login' && (
           <form onSubmit={handleStandardLogin} className="space-y-4">
+            {passwordResetMessage && (
+              <p role="status" className={`text-xs rounded-xl px-3 py-2 ${passwordResetError ? 'text-rose-300 bg-rose-500/10' : 'text-emerald-300 bg-emerald-500/10'}`}>
+                {passwordResetMessage}
+              </p>
+            )}
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">Username or Email</label>
               <input
@@ -206,12 +268,99 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric' }
                 className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
               />
             </div>
+            <div className="flex justify-end -mt-2">
+              <button type="button" onClick={openForgotPassword} className="text-xs text-indigo-300 hover:text-indigo-200">
+                Forgot password?
+              </button>
+            </div>
             <button
               type="submit"
               disabled={isProcessing}
               className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md"
             >
               Sign In
+            </button>
+          </form>
+        )}
+
+        {tab === 'forgot' && (
+          <form onSubmit={handleForgotPassword} className="space-y-4">
+            <p className="text-xs text-slate-400">
+              Enter the email address on your account and we will send a password reset link if it exists.
+            </p>
+            {passwordResetMessage && (
+              <p role="status" className={`text-xs rounded-xl px-3 py-2 ${passwordResetError ? 'text-rose-300 bg-rose-500/10' : 'text-emerald-300 bg-emerald-500/10'}`}>
+                {passwordResetMessage}
+              </p>
+            )}
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Account email</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isProcessing}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md disabled:opacity-60"
+            >
+              {isProcessing ? 'Sending...' : 'Send Reset Link'}
+            </button>
+            <button type="button" onClick={() => setTab('login')} className="w-full text-xs text-slate-400 hover:text-white">
+              Back to Sign In
+            </button>
+          </form>
+        )}
+
+        {tab === 'reset' && (
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <p className="text-xs text-slate-400">Choose a new password with at least 12 characters.</p>
+            {passwordResetMessage && (
+              <p role="status" className={`text-xs rounded-xl px-3 py-2 ${passwordResetError ? 'text-rose-300 bg-rose-500/10' : 'text-emerald-300 bg-emerald-500/10'}`}>
+                {passwordResetMessage}
+              </p>
+            )}
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">New password</label>
+              <input
+                type="password"
+                required
+                minLength={12}
+                maxLength={72}
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                autoComplete="new-password"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-400 mb-1">Confirm new password</label>
+              <input
+                type="password"
+                required
+                minLength={12}
+                maxLength={72}
+                value={confirmNewPassword}
+                onChange={(e) => setConfirmNewPassword(e.target.value)}
+                autoComplete="new-password"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={isProcessing || !resetToken}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md disabled:opacity-60"
+            >
+              {isProcessing ? 'Updating...' : 'Reset Password'}
+            </button>
+            <button type="button" onClick={() => setTab('login')} className="w-full text-xs text-slate-400 hover:text-white">
+              Back to Sign In
             </button>
           </form>
         )}

@@ -19,24 +19,35 @@ export const authMiddleware = (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
+  let decoded;
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
-    next();
+    decoded = jwt.verify(token, JWT_SECRET);
   } catch (err) {
     return res.status(403).json({ error: 'Invalid or expired authentication token' });
   }
+
+  const user = db.findOne('users', item => item.id === decoded.id);
+  if (!user || (decoded.authVersion || 0) !== (user.authVersion || 0)) {
+    return res.status(403).json({ error: 'Invalid or expired authentication token' });
+  }
+  req.user = decoded;
+  next();
 };
 
 export const optionalAuthMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
+    let decoded;
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      req.user = decoded;
+      decoded = jwt.verify(token, JWT_SECRET);
     } catch (err) {
-      // ignore
+      return next();
+    }
+
+    const user = db.findOne('users', item => item.id === decoded.id);
+    if (user && (decoded.authVersion || 0) === (user.authVersion || 0)) {
+      req.user = decoded;
     }
   }
   next();

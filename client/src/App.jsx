@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   Bell, 
   Plus, 
@@ -37,6 +37,13 @@ import { WorldClock } from './components/WorldClock.jsx';
 import { AdminProofModal } from './components/AdminProofModal.jsx';
 import { ReferralRewards } from './components/ReferralRewards.jsx';
 
+const getPasswordResetTokenFromHash = () => {
+  const [route, query = ''] = window.location.hash.split('?', 2);
+  return route === '#reset-password'
+    ? new URLSearchParams(query).get('token') || ''
+    : '';
+};
+
 const hasActiveSubscription = (user) => {
   if (!user?.isPro || user.username === 'demo' || user.subscriptionStatus !== 'active') return false;
   if (user.proPlan === 'pro_lifetime' && !user.proExpiresAt) return true;
@@ -54,18 +61,40 @@ export default function App() {
   // Modals state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [alarmToEdit, setAlarmToEdit] = useState(null);
-  const [isBiometricModalOpen, setIsBiometricModalOpen] = useState(false);
+  const [resetToken, setResetToken] = useState(getPasswordResetTokenFromHash);
+  const [isBiometricModalOpen, setIsBiometricModalOpen] = useState(() => Boolean(resetToken));
   const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('login');
+  const [authModalTab, setAuthModalTab] = useState(() => resetToken ? 'reset' : 'login');
+
+  useEffect(() => {
+    const handlePasswordResetLink = () => {
+      const token = getPasswordResetTokenFromHash();
+      if (!token) return;
+      setResetToken(token);
+      setAuthModalTab('reset');
+      setIsBiometricModalOpen(true);
+    };
+
+    window.addEventListener('hashchange', handlePasswordResetLink);
+    return () => window.removeEventListener('hashchange', handlePasswordResetLink);
+  }, []);
 
   const openAuth = (tab = 'login') => {
     setAuthModalTab(tab);
     setIsBiometricModalOpen(true);
+  };
+
+  const handlePasswordResetComplete = () => {
+    api.setToken(null);
+    refreshUser();
+    setResetToken('');
+    setAuthModalTab('login');
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   };
 
   const openSubscription = () => {
@@ -446,6 +475,8 @@ export default function App() {
         isOpen={isBiometricModalOpen}
         onClose={() => setIsBiometricModalOpen(false)}
         initialTab={authModalTab}
+        resetToken={resetToken}
+        onResetComplete={handlePasswordResetComplete}
       />
 
       {/* Calendar Export Modal */}

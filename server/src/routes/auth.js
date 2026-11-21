@@ -1,17 +1,39 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import path from 'path';
+import rateLimit from 'express-rate-limit';
 import { db, UPLOADS_DIR } from '../db.js';
 import { JWT_SECRET, authMiddleware, isAdminUser, subscriberMiddleware } from '../middleware/auth.js';
 import { createUniqueReferralCode, syncReferralRewards } from '../services/referrals.js';
+import {
+  consumePasswordResetToken,
+  createPasswordResetToken
+} from '../services/passwordReset.js';
 
 const router = express.Router();
+const passwordResetRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 5,
+  standardHeaders: true,
+  legacyHeaders: false
+});
+const passwordResetCompletionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false
+});
 
 const toSafeUser = user => {
-  const { passwordHash: _, ...userSafe } = user;
+  const userSafe = { ...user };
+  delete userSafe.passwordHash;
+  delete userSafe.passwordResetTokenHash;
+  delete userSafe.passwordResetExpiresAt;
+  delete userSafe.authVersion;
   return { ...userSafe, isAdmin: isAdminUser(user) };
 };
 
@@ -41,10 +63,30 @@ const upload = multer({
 // Helper: generate token
 const signToken = (user) => {
   return jwt.sign(
-    { id: user.id, username: user.username, email: user.email },
+    {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      authVersion: user.authVersion || 0
+    },
     JWT_SECRET,
     { expiresIn: '30d' }
   );
+};
+
+const getPasswordResetMailer = () => {
+  const { SMTP_HOST, SMTP_USER, SMTP_PASS } = process.env;
+  const port = Number(process.env.SMTP_PORT || 587);
+  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS || !Number.isInteger(port) || port < 1) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    host: SMTP_HOST,
+    port,
+    secure: port === 465,
+    auth: { user: SMTP_USER, pass: SMTP_PASS }
+  });
 };
 
 // Default seed user if none exists
@@ -174,6 +216,92 @@ router.post('/login', async (req, res) => {
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Login failed' });
+  }
+});
+
+// POST /forgot-password
+router.post('/forgot-password', passwordResetRequestLimiter, async (req, res) => {
+  try {
+    const email = typeof req.body?.email === 'string' ? req.body.email.trim().toLowerCase() : '';
+    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'A valid email address is required' });
+    }
+
+    const mailer = getPasswordResetMailer();
+    if (!mailer) {
+      return res.status(503).json({
+        error: 'Password reset email is not configured on this server yet.'
+      });
+    }
+
+    const user = db.findOne('users', item => item.email?.trim().toLowerCase() === email);
+    if (!user) {
+      return res.status(202).json({
+        message: 'If an account exists for that email, a password reset link will be sent.'
+      });
+    }
+
+    const reset = createPasswordResetToken();
+    await db.update('users', item => item.id === user.id, {
+      passwordResetTokenHash: reset.tokenHash,
+      passwordResetExpiresAt: reset.expiresAt
+    });
+
+    const resetUrl = new URL('/', process.env.PUBLIC_APP_URL || 'https://auraalarm.onrender.com');
+    resetUrl.hash = `reset-password?token=${reset.token}`;
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER;
+
+    try {
+      await mailer.sendMail({
+        from,
+        to: user.email,
+        subject: 'Reset your AuraAlarm password',
+        text: `Use this link within 30 minutes to reset your AuraAlarm password:\n\n${resetUrl.href}\n\nIf you did not request this, you can ignore this email.`,
+        html: `<p>Use this link within 30 minutes to reset your AuraAlarm password:</p><p><a href="${resetUrl.href}">Reset password</a></p><p>If you did not request this, you can ignore this email.</p>`
+      });
+    } catch (err) {
+      console.error('Password reset email delivery failed:', err);
+      await db.update('users', item => (
+        item.id === user.id && item.passwordResetTokenHash === reset.tokenHash
+      ), {
+        passwordResetTokenHash: null,
+        passwordResetExpiresAt: null
+      });
+      return res.status(502).json({
+        error: 'Could not send the password reset email. Please try again later.'
+      });
+    }
+
+    return res.status(202).json({
+      message: 'If an account exists for that email, a password reset link will be sent.'
+    });
+  } catch (err) {
+    console.error('Password reset request error:', err);
+    return res.status(500).json({ error: 'Could not process the password reset request.' });
+  }
+});
+
+// POST /reset-password
+router.post('/reset-password', passwordResetCompletionLimiter, async (req, res) => {
+  try {
+    const { token, password } = req.body || {};
+    if (typeof token !== 'string' || !/^[a-f0-9]{64}$/i.test(token)) {
+      return res.status(400).json({ error: 'This password reset link is invalid or has expired.' });
+    }
+    if (typeof password !== 'string' || password.length < 12 || Buffer.byteLength(password, 'utf8') > 72) {
+      return res.status(400).json({ error: 'Password must be at least 12 characters and no more than 72 UTF-8 bytes.' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const resetCompleted = await consumePasswordResetToken(db, token, passwordHash);
+    if (!resetCompleted) {
+      return res.status(400).json({ error: 'This password reset link is invalid or has expired.' });
+    }
+
+    return res.json({ message: 'Password reset successfully. Please sign in with your new password.' });
+  } catch (err) {
+    console.error('Password reset error:', err);
+    return res.status(500).json({ error: 'Failed to reset password. Please try again.' });
   }
 });
 

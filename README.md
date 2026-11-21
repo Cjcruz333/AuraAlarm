@@ -134,6 +134,9 @@ Before deploying, configure these environment variables:
 - `ADMIN_EMAIL`: the account email allowed to review and approve payment proofs.
 - `PAYSTACK_SECRET_KEY`: optional; required for server-side card-payment verification.
 - `VITE_PAYSTACK_PUBLIC_KEY`: optional; set when building the client to enable Paystack checkout.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: SMTP credentials required to deliver password-reset emails. Keep the password private and configure these in the Render service environment, not in source control.
+- `SMTP_FROM`: optional sender address; defaults to `SMTP_USER`.
+- `PUBLIC_APP_URL`: public website URL used in password-reset links; defaults to `https://auraalarm.onrender.com`.
 
 The Neon CLI stores local connection variables in the root `.env.local`; the server start scripts load that file and `server/.env` without printing their values. Keep both files out of source control.
 
