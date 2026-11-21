@@ -353,6 +353,7 @@ router.post('/process-card', authMiddleware, async (req, res) => {
       proPlanName: plan.name,
       proBadge: plan.badge,
       proSubscribedAt: now.toISOString(),
+      firstProSubscribedAt: user.firstProSubscribedAt || user.proSubscribedAt || now.toISOString(),
       proExpiresAt: expiresAt,
       subscriptionStatus: 'active'
     });
@@ -455,6 +456,7 @@ router.post('/admin/approve', adminMiddleware, async (req, res) => {
       proPlanName: plan.name,
       proBadge: plan.badge,
       proSubscribedAt: now.toISOString(),
+      firstProSubscribedAt: targetUser.firstProSubscribedAt || targetUser.proSubscribedAt || now.toISOString(),
       proExpiresAt: expiresAt,
       subscriptionStatus: 'active',
       pendingPlan: null,

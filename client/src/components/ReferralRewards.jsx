@@ -137,8 +137,8 @@ export const ReferralRewards = ({ onLogin, onRegister }) => {
               </div>
               <Crown className="h-8 w-8 text-amber-300" />
             </div>
-            <p className="mt-4 text-sm font-semibold text-slate-100">Invite 5 people who subscribe</p>
-            <p className="mt-1 text-sm text-slate-400">Each invited person must have an active, verified paid subscription for you to qualify.</p>
+            <p className="mt-4 text-sm font-semibold text-slate-100">Invite 5 people who subscribe within 2 days</p>
+            <p className="mt-1 text-sm text-slate-400">The 48-hour timer starts when your first invited person pays for a subscription. All five must have active, verified subscriptions before it ends.</p>
           </article>
         </div>
 
@@ -178,7 +178,12 @@ export const ReferralRewards = ({ onLogin, onRegister }) => {
               {loading ? <LoaderCircle className="h-5 w-5 animate-spin text-slate-400" /> : (
                 <div className="space-y-2 text-sm">
                   <p className="text-slate-300"><strong className="text-white">{stats?.referralsIn24Hours || 0}/10</strong> new accounts in the last 24 hours</p>
-                  <p className="text-slate-300"><strong className="text-white">{stats?.activeSubscribers || 0}/5</strong> invited users with an active paid subscription</p>
+                  <p className="text-slate-300"><strong className="text-white">{stats?.subscriberReferralsIn48Hours || 0}/5</strong> subscribers in the 48-hour reward window</p>
+                  <p className="text-xs text-slate-500">
+                    {stats?.subscriberWindowExpired
+                      ? 'The 48-hour subscriber reward window has ended.'
+                      : 'The timer starts when your first invited person pays for a subscription.'}
+                  </p>
                   <p className="text-xs text-slate-500">{stats?.totalReferrals || 0} total invited accounts</p>
                 </div>
               )}

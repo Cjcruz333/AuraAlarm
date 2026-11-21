@@ -308,7 +308,9 @@ export default function App() {
         </div>
       )}
 
-      {shouldCheckReferralReminder && referralStats?.activeSubscribers < 5 && (
+      {shouldCheckReferralReminder
+        && referralStats?.subscriberReferralsIn48Hours < 5
+        && !referralStats?.subscriberWindowExpired && (
         <div role="status" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 w-full animate-fadeIn">
           <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/40 bg-amber-950/40 p-4 text-amber-100 shadow-xl sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
@@ -317,7 +319,7 @@ export default function App() {
                 <p className="text-sm font-bold">{t('Your subscription expires within 2 days')}</p>
                 <p className="mt-1 text-xs text-amber-100/80">
                   {t('You have {{count}} of 5 invited people with active paid subscriptions. Reach 5 to qualify for the ₦5,000 subscriber reward. Your current expiry date will not change.', {
-                    count: referralStats.activeSubscribers || 0
+                    count: referralStats.subscriberReferralsIn48Hours || 0
                   })}
                 </p>
               </div>
