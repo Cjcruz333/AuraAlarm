@@ -4,11 +4,13 @@ import { audioEngine } from '../services/audioService.js';
 import { speechService } from '../services/speechService.js';
 import confetti from 'canvas-confetti';
 import { useAuth } from './AuthContext.jsx';
+import { useSettings } from './SettingsContext.jsx';
 
 const AlarmContext = createContext(null);
 
 export const AlarmProvider = ({ children }) => {
   const { user } = useAuth();
+  const { snoozeDurationMinutes, t } = useSettings();
   const [alarms, setAlarms] = useState([]);
   const [ringingAlarm, setRingingAlarm] = useState(null);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -173,12 +175,14 @@ export const AlarmProvider = ({ children }) => {
     speechService.stop();
     setRingingAlarm(null);
 
-    showMilestoneToast('⏰ Alarm snoozed for 5 minutes. Take a gentle breath.');
+    showMilestoneToast(t('Alarm snoozed for {{minutes}} minutes. Take a gentle breath.', {
+      minutes: snoozeDurationMinutes
+    }));
     setTimeout(() => {
       if (ringingAlarm) {
         triggerAlarm(ringingAlarm);
       }
-    }, 5 * 60 * 1000);
+    }, snoozeDurationMinutes * 60 * 1000);
   };
 
   // Dismiss Alarm

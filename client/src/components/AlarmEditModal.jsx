@@ -3,8 +3,10 @@ import { X, Clock, Volume2, Upload, Heart, Lock, Sparkles, Check, Globe, Chevron
 import { api } from '../services/api.js';
 import { cryptoService } from '../services/cryptoService.js';
 import { WORLD_COUNTRIES } from './WorldClock.jsx';
+import { useSettings } from '../context/SettingsContext.jsx';
 
 export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
+  const { clockFormat, defaultAlarmSound, formatTime } = useSettings();
   const [time, setTime] = useState('06:30');
   const [label, setLabel] = useState('Morning Rise & Shine');
   const [days, setDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
@@ -56,8 +58,9 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
       setTime('07:00');
       setLabel('Rise & Conquer');
       setDays(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
-      setSoundId('gentle_chimes');
-      setSoundName('Gentle Dawn Chimes');
+      const selectedSound = builtInSounds.find(sound => sound.id === defaultAlarmSound) || builtInSounds[0];
+      setSoundId(selectedSound.id);
+      setSoundName(selectedSound.name);
       setCustomSoundUrl('');
       setPhotoUrl('');
       setLovedOneName('');
@@ -66,7 +69,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
       setSpeechGreeting(true);
       setSecretNote('');
     }
-  }, [alarmToEdit, isOpen]);
+  }, [alarmToEdit, isOpen, defaultAlarmSound]);
 
   if (!isOpen) return null;
 
@@ -246,6 +249,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
           <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 space-y-5">
 
             {/* ULTRA PROMINENT DIGITAL TIME CONSOLE */}
+            {clockFormat === '12h' ? (
             <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-950/70 via-slate-900 to-slate-900/95 border-2 border-amber-500/50 shadow-xl shadow-amber-500/5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-xs font-extrabold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -448,6 +452,22 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
               </div>
 
             </div>
+            ) : (
+              <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4">
+                <label htmlFor="alarm-time-24h" className="mb-2 block text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Wake Up Time (24-hour)
+                </label>
+                <input
+                  id="alarm-time-24h"
+                  type="time"
+                  value={time}
+                  onChange={event => setTime(event.target.value)}
+                  required
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 font-mono text-2xl text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="mt-2 text-xs text-slate-400">Current selection: {formatTime(time)}</p>
+              </div>
+            )}
 
             {/* Worldwide Country / Timezone Selector */}
             <div>

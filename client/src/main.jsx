@@ -4,6 +4,7 @@ import App from './App.jsx';
 import './index.css';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { AlarmProvider } from './context/AlarmContext.jsx';
+import { SettingsProvider } from './context/SettingsContext.jsx';
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -74,11 +75,13 @@ if (rootEl) {
   ReactDOM.createRoot(rootEl).render(
     <React.StrictMode>
       <ErrorBoundary>
-        <AuthProvider>
-          <AlarmProvider>
-            <App />
-          </AlarmProvider>
-        </AuthProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <AlarmProvider>
+              <App />
+            </AlarmProvider>
+          </AuthProvider>
+        </SettingsProvider>
       </ErrorBoundary>
     </React.StrictMode>
   );

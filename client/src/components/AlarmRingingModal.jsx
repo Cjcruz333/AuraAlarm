@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Volume2, Moon, Sun, Sunrise, Heart, BellOff, Clock, ShieldCheck, Sparkles } from 'lucide-react';
 import { useAlarm } from '../context/AlarmContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+import { useSettings } from '../context/SettingsContext.jsx';
 import { speechService } from '../services/speechService.js';
 
 export const AlarmRingingModal = () => {
   const { ringingAlarm, snoozeAlarm, dismissAlarm } = useAlarm();
   const { user } = useAuth();
+  const { t, formatTime, snoozeDurationMinutes } = useSettings();
   const [greeting, setGreeting] = useState('');
 
   useEffect(() => {
@@ -54,7 +56,7 @@ export const AlarmRingingModal = () => {
 
         {/* Current Alarm Time Display */}
         <h1 className="text-5xl sm:text-6xl font-extrabold tracking-tight text-white mb-2 font-mono">
-          {ringingAlarm.time}
+          {formatTime(ringingAlarm.time)}
         </h1>
         <p className="text-sm font-medium text-slate-300 mb-6 flex items-center gap-1.5 justify-center">
           <Clock className="w-4 h-4 text-indigo-400" />
@@ -105,7 +107,7 @@ export const AlarmRingingModal = () => {
             className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 text-sm font-semibold border border-slate-700 transition duration-200 active:scale-95 shadow-lg"
           >
             <Moon className="w-4 h-4 text-slate-400" />
-            <span>Snooze (+5m)</span>
+            <span>{t('Snooze (+{{minutes}}m)', { minutes: snoozeDurationMinutes })}</span>
           </button>
 
           <button

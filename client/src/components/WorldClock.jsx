@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSettings } from '../context/SettingsContext.jsx';
 import { 
   Globe, 
   Search, 
@@ -49,6 +50,7 @@ export const WORLD_COUNTRIES = [
 ];
 
 export const WorldClock = ({ onSetAlarmForCountry }) => {
+  const { locale, clockFormat } = useSettings();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRegion, setSelectedRegion] = useState('All');
@@ -89,14 +91,14 @@ export const WorldClock = ({ onSetAlarmForCountry }) => {
   // Helper to format time in a specific timezone
   const getTimeInZone = (tz) => {
     try {
-      const timeStr = currentTime.toLocaleTimeString('en-US', {
+      const timeStr = currentTime.toLocaleTimeString(locale, {
         timeZone: tz,
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: true
+        hour12: clockFormat === '12h'
       });
-      const dateStr = currentTime.toLocaleDateString('en-US', {
+      const dateStr = currentTime.toLocaleDateString(locale, {
         timeZone: tz,
         weekday: 'short',
         month: 'short',

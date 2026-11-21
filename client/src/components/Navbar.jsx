@@ -17,10 +17,13 @@ import {
   Globe,
   Menu,
   X,
-  Gift
+  Gift,
+  Timer,
+  Settings
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useAlarm } from '../context/AlarmContext.jsx';
+import { useSettings } from '../context/SettingsContext.jsx';
 
 export const Navbar = ({ 
   activeTab, 
@@ -35,35 +38,35 @@ export const Navbar = ({
 }) => {
   const { user } = useAuth();
   const { currentTime } = useAlarm();
+  const { t, locale, formatTime } = useSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const formattedTime = currentTime.toLocaleTimeString([], { 
-    hour: '2-digit', 
-    minute: '2-digit'
-  });
+  const formattedTime = formatTime(currentTime);
 
-  const formattedDate = currentTime.toLocaleDateString([], {
+  const formattedDate = currentTime.toLocaleDateString(locale, {
     weekday: 'short',
     month: 'short',
     day: 'numeric'
   });
   const greeting = currentTime.getHours() < 12
-    ? 'Good morning'
+    ? t('Good morning')
     : currentTime.getHours() < 17
-      ? 'Good afternoon'
-      : 'Good evening';
+      ? t('Good afternoon')
+      : t('Good evening');
   const displayName = user?.name?.trim() || user?.username || '';
   const firstName = displayName.split(/\s+/)[0];
 
   const navItems = [
-    { id: 'alarms', label: 'Alarms', icon: Bell },
-    { id: 'world', label: 'World Clock', icon: Globe },
-    { id: 'sleep', label: 'Sleep Aid', icon: Moon },
-    { id: 'fitness', label: 'Fitness & Fuel', icon: Activity },
-    { id: 'location', label: 'Location Alerts', icon: MapPin },
-    { id: 'stats', label: 'Dashboard', icon: BarChart3 },
-    { id: 'peace', label: 'Loved One', icon: Heart },
-    { id: 'referrals', label: 'Refer & Earn', icon: Gift }
+    { id: 'alarms', label: t('Alarms'), icon: Bell },
+    { id: 'world', label: t('World Clock'), icon: Globe },
+    { id: 'sleep', label: t('Sleep Aid'), icon: Moon },
+    { id: 'fitness', label: t('Fitness & Fuel'), icon: Activity },
+    { id: 'location', label: t('Location Alerts'), icon: MapPin },
+    { id: 'stats', label: t('Dashboard'), icon: BarChart3 },
+    { id: 'peace', label: t('Loved One'), icon: Heart },
+    { id: 'referrals', label: t('Refer & Earn'), icon: Gift },
+    { id: 'stopwatch', label: t('Stopwatch'), icon: Timer },
+    { id: 'settings', label: t('Settings'), icon: Settings }
   ];
 
   return (
@@ -273,6 +276,18 @@ export const Navbar = ({
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"
                 >
                   <Smartphone className="w-4 h-4" /> Install app
+                </button>
+                <button
+                  onClick={() => { setActiveTab('stopwatch'); setIsMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"
+                >
+                  <Timer className="w-4 h-4" /> {t('Stopwatch')}
+                </button>
+                <button
+                  onClick={() => { setActiveTab('settings'); setIsMobileMenuOpen(false); }}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"
+                >
+                  <Settings className="w-4 h-4" /> {t('Settings')}
                 </button>
                 <button
                   onClick={() => { setActiveTab('peace'); setIsMobileMenuOpen(false); }}

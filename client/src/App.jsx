@@ -36,6 +36,9 @@ import { UpgradeProModal } from './components/UpgradeProModal.jsx';
 import { WorldClock } from './components/WorldClock.jsx';
 import { AdminProofModal } from './components/AdminProofModal.jsx';
 import { ReferralRewards } from './components/ReferralRewards.jsx';
+import { SettingsPage } from './components/SettingsPage.jsx';
+import { Stopwatch } from './components/Stopwatch.jsx';
+import { useSettings } from './context/SettingsContext.jsx';
 
 const getPasswordResetTokenFromHash = () => {
   const [route, query = ''] = window.location.hash.split('?', 2);
@@ -53,6 +56,7 @@ const hasActiveSubscription = (user) => {
 
 export default function App() {
   const { user, loading, refreshUser } = useAuth();
+  const { t } = useSettings();
   const { alarms, loadAlarms, testAlarm, milestoneToast, setMilestoneToast, currentTime } = useAlarm();
   const isPreview = !hasActiveSubscription(user);
 
@@ -307,9 +311,11 @@ export default function App() {
             <div className="flex items-start gap-3">
               <Clock className="mt-0.5 h-5 w-5 shrink-0 text-amber-300" />
               <div>
-                <p className="text-sm font-bold">Your subscription expires within 2 days</p>
+                <p className="text-sm font-bold">{t('Your subscription expires within 2 days')}</p>
                 <p className="mt-1 text-xs text-amber-100/80">
-                  You have {referralStats.activeSubscribers || 0} of 5 invited people with active paid subscriptions. Reach 5 to qualify for the ₦5,000 subscriber reward. Your current expiry date will not change.
+                  {t('You have {{count}} of 5 invited people with active paid subscriptions. Reach 5 to qualify for the ₦5,000 subscriber reward. Your current expiry date will not change.', {
+                    count: referralStats.activeSubscribers || 0
+                  })}
                 </p>
               </div>
             </div>
@@ -317,7 +323,7 @@ export default function App() {
               onClick={() => setActiveTab('referrals')}
               className="shrink-0 rounded-xl bg-amber-400 px-4 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-300"
             >
-              View referral progress
+              {t('View referral progress')}
             </button>
           </div>
         </div>
@@ -326,12 +332,12 @@ export default function App() {
       {shouldCheckReferralReminder && referralReminderError && !referralStats && (
         <div role="alert" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 w-full animate-fadeIn">
           <div className="flex flex-col gap-3 rounded-2xl border border-amber-500/40 bg-amber-950/40 p-4 text-amber-100 shadow-xl sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm">{referralReminderError}</p>
+            <p className="text-sm">{t(referralReminderError)}</p>
             <button
               onClick={() => setActiveTab('referrals')}
               className="shrink-0 rounded-xl bg-amber-400 px-4 py-2 text-xs font-extrabold text-slate-950 hover:bg-amber-300"
             >
-              View referral progress
+              {t('View referral progress')}
             </button>
           </div>
         </div>
@@ -530,6 +536,9 @@ export default function App() {
             onRegister={() => openAuth('register')}
           />
         )}
+
+        {activeTab === 'stopwatch' && <Stopwatch />}
+        {activeTab === 'settings' && <SettingsPage />}
 
       </main>
 
