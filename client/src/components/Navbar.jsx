@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { useAlarm } from '../context/AlarmContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { api } from '../services/api.js';
 
 export const Navbar = ({ 
   activeTab, 
@@ -197,7 +198,7 @@ export const Navbar = ({
             >
               {user?.lovedOne?.photoUrl ? (
                 <img 
-                  src={user.lovedOne.photoUrl} 
+                  src={api.resolveAssetUrl(user.lovedOne.photoUrl)}
                   alt={user.lovedOne.name} 
                   className="w-full h-full object-cover" 
                 />

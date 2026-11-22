@@ -454,7 +454,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                 <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                   <span className="text-[11px] text-slate-400">Attached Receipt Screenshot:</span>
                   <a
-                    href={pendingProof.receiptUrl}
+                    href={api.resolveAssetUrl(pendingProof.receiptUrl)}
                     target="_blank"
                     rel="noreferrer"
                     className="text-indigo-400 hover:text-indigo-300 text-xs font-semibold underline flex items-center gap-1"

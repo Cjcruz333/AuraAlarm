@@ -8,6 +8,8 @@
     "server": "npm run dev --prefix server",
     "client": "npm run dev --prefix client",
     "build": "npm run build --prefix client",
+    "build:firebase": "npm run build:firebase --prefix client",
+    "deploy:firebase": "npm run build:firebase --prefix client && firebase deploy --only hosting",
     "cap:android": "cd client && npx cap open android",
     "cap:ios": "cd client && npx cap open ios",
     "deploy:google": "node scripts/publish-to-google-play.js"

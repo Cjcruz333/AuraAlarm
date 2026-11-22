@@ -155,7 +155,7 @@ export const AlarmProvider = ({ children }) => {
   const triggerAlarm = (alarm) => {
     setRingingAlarm(alarm);
     // 1. Play sound
-    audioEngine.playAlarmSound(alarm.soundId || 'gentle_chimes', alarm.customSoundUrl);
+    audioEngine.playAlarmSound(alarm.soundId || 'gentle_chimes', api.resolveAssetUrl(alarm.customSoundUrl));
 
     // 2. Play dynamic voice greeting if enabled
     if (alarm.speechGreeting !== false) {

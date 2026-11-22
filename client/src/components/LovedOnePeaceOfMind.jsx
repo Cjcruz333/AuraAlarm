@@ -157,7 +157,7 @@ export const LovedOnePeaceOfMind = () => {
             <div className="relative group">
               <div className="w-32 h-32 rounded-2xl overflow-hidden border-2 border-slate-700 bg-slate-950 shadow-lg">
                 {photoUrl ? (
-                  <img src={photoUrl} alt="Loved One" className="w-full h-full object-cover" />
+                  <img src={api.resolveAssetUrl(photoUrl)} alt="Loved One" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-600">
                     <Heart className="w-10 h-10" />

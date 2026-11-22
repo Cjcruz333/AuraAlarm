@@ -1,6 +1,7 @@
 // Centralized API Client
 
-const BASE_URL = '/api';
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
+const API_ORIGIN = /^https?:\/\//i.test(BASE_URL) ? new URL(BASE_URL).origin : '';
 
 class ApiService {
   constructor() {
@@ -47,6 +48,11 @@ class ApiService {
       console.error(`API Error [${endpoint}]:`, err);
       throw err;
     }
+  }
+
+  resolveAssetUrl(url) {
+    if (typeof url !== 'string' || !url.startsWith('/uploads/')) return url;
+    return API_ORIGIN ? `${API_ORIGIN}${url}` : url;
   }
 
   // --- Auth & Profile ---

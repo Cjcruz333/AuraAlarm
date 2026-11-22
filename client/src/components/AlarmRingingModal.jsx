@@ -4,6 +4,7 @@ import { useAlarm } from '../context/AlarmContext.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { speechService } from '../services/speechService.js';
+import { api } from '../services/api.js';
 
 export const AlarmRingingModal = () => {
   const { ringingAlarm, snoozeAlarm, dismissAlarm } = useAlarm();
@@ -21,9 +22,9 @@ export const AlarmRingingModal = () => {
   if (!ringingAlarm) return null;
 
   // Priority: alarm specific photo > user loved one photo > default serene portrait
-  const displayPhoto = ringingAlarm.photoUrl || 
+  const displayPhoto = api.resolveAssetUrl(ringingAlarm.photoUrl || 
     user?.lovedOne?.photoUrl || 
-    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80';
+    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80');
 
   const lovedOneName = ringingAlarm.lovedOneName || user?.lovedOne?.name || 'Someone Special';
   const customMessage = ringingAlarm.customMessage || user?.lovedOne?.message || 'Rise and shine! Today holds limitless possibilities.';

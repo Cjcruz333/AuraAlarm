@@ -598,7 +598,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
                 {/* Photo Preview Thumbnail */}
                 <div className="w-24 h-24 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 flex items-center justify-center">
                   {photoUrl ? (
-                    <img src={photoUrl} alt="Custom Preview" className="w-full h-full object-cover" />
+                    <img src={api.resolveAssetUrl(photoUrl)} alt="Custom Preview" className="w-full h-full object-cover" />
                   ) : (
                     <Heart className="w-8 h-8 text-slate-600" />
                   )}
