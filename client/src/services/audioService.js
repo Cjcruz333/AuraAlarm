@@ -301,6 +301,7 @@ class AudioEngine {
 
   async playAlarmSound(soundId = 'gentle_chimes', customUrl = null) {
     this.stopAlarmSound();
+    this.stopKeepAlive();
     const ctx = this.init();
     if (ctx.state === 'suspended') {
       try {
@@ -391,6 +392,43 @@ class AudioEngine {
         // ignore
       }
       this.customAudioPlayer = null;
+    }
+  }
+
+  // --- BACKGROUND KEEP-ALIVE (iOS PWA & Web Background Timer) ---
+  startKeepAlive(description = 'Alarm active and standing by') {
+    if (typeof window === 'undefined') return;
+    try {
+      if (!this.keepAlivePlayer) {
+        this.keepAlivePlayer = new Audio('/silence.wav');
+        this.keepAlivePlayer.loop = true;
+        this.keepAlivePlayer.playsInline = true;
+        this.keepAlivePlayer.volume = 0.01;
+      }
+      this.keepAlivePlayer.play().then(() => {
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: 'AuraAlarm Standing By',
+            artist: description,
+            album: 'AuraAlarm Smart Clock'
+          });
+          navigator.mediaSession.playbackState = 'playing';
+        }
+      }).catch(() => {
+        // Audio playback requires user interaction, will trigger on next click
+      });
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  stopKeepAlive() {
+    if (this.keepAlivePlayer) {
+      try {
+        this.keepAlivePlayer.pause();
+      } catch (e) {
+        // ignore
+      }
     }
   }
 }

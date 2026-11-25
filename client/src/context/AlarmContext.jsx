@@ -34,6 +34,11 @@ export const AlarmProvider = ({ children }) => {
   }, []);
 
   const requestNotificationPermission = async () => {
+    audioEngine.init();
+    const activeList = alarms.filter(a => a && a.active);
+    if (activeList.length > 0) {
+      audioEngine.startKeepAlive(`Next alarm: ${activeList[0].time}`);
+    }
     const status = await notificationService.requestPermission();
     setNotificationPermission(status);
     if (status === 'granted') {
@@ -42,6 +47,16 @@ export const AlarmProvider = ({ children }) => {
     }
     return status;
   };
+
+  // Keep background audio session alive on mobile (iOS PWA / Web) when any alarm is active
+  useEffect(() => {
+    const activeList = alarms.filter(a => a && a.active);
+    if (activeList.length > 0 && !ringingAlarm) {
+      audioEngine.startKeepAlive(`Next alarm: ${activeList[0].time}`);
+    } else if (activeList.length === 0) {
+      audioEngine.stopKeepAlive();
+    }
+  }, [alarms, ringingAlarm]);
 
   // Load private alarm data when account has an active subscription or 7-day free trial.
   useEffect(() => {

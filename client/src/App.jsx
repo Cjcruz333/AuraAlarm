@@ -354,26 +354,26 @@ export default function App() {
         </div>
       )}
 
-      {!isPreview && notificationPermission !== 'granted' && (
+      {notificationPermission !== 'granted' && (
         notificationPermission !== 'unsupported' ? (
-          <div className="bg-emerald-950/70 border-b border-emerald-500/30">
+          <div className="bg-emerald-950/80 border-b border-emerald-500/30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-bold text-white">
                   {notificationPermission === 'denied'
                     ? '🔕 Phone alarm notifications are blocked'
-                    : '🔔 Enable Phone Alarm & Reminder Alerts'}
+                    : '🔔 Enable Lock-Screen & Home-Screen Alerts'}
                 </p>
-                <p className="text-xs text-emerald-200/80">
+                <p className="text-xs text-emerald-200/90">
                   {notificationPermission === 'denied'
-                    ? 'Allow notifications for AuraAlarm in your phone or browser settings so alarms can ring and show reminders.'
-                    : 'Grant permission so your alarms ring on your phone and send reminders before your scheduled wake-up time.'}
+                    ? 'Allow notifications for AuraAlarm in your phone settings so alarms can ring and show on your screen.'
+                    : 'Allow alerts so your alarm rings loudly and shows on your phone screen even when your phone is locked or on the home screen.'}
                 </p>
               </div>
               {notificationPermission === 'default' && (
                 <button
                   onClick={requestNotificationPermission}
-                  className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-extrabold hover:from-emerald-400 hover:to-teal-400"
+                  className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-extrabold hover:from-emerald-400 hover:to-teal-400 shadow-md shadow-emerald-500/20"
                 >
                   Allow Phone Alerts
                 </button>
