@@ -27,6 +27,8 @@ class AudioEngine {
           src.start(0);
           this.unlocked = true;
         }
+        // Start background keep-alive on user interaction so iOS/PWA does not suspend in background
+        this.startKeepAlive();
       } catch {
         // ignore until next gesture
       }
