@@ -4,9 +4,11 @@ import { api } from '../services/api.js';
 import { cryptoService } from '../services/cryptoService.js';
 import { WORLD_COUNTRIES } from './WorldClock.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { useAlarm } from '../context/AlarmContext.jsx';
 
 export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
   const { clockFormat, defaultAlarmSound, formatTime } = useSettings();
+  const { notificationPermission, requestNotificationPermission } = useAlarm();
   const [time, setTime] = useState('06:30');
   const [label, setLabel] = useState('Morning Rise & Shine');
   const [days, setDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
@@ -211,6 +213,10 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
       e2eeEncryptedNotes: encryptedNotes,
       active: true
     };
+
+    if (notificationPermission === 'default') {
+      await requestNotificationPermission();
+    }
 
     onSave(payload);
     onClose();

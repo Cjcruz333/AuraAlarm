@@ -69,7 +69,16 @@ const hasActiveSubscription = (user) => {
 export default function App() {
   const { user, loading, refreshUser } = useAuth();
   const { t } = useSettings();
-  const { alarms, loadAlarms, testAlarm, milestoneToast, setMilestoneToast, currentTime } = useAlarm();
+  const {
+    alarms,
+    loadAlarms,
+    testAlarm,
+    milestoneToast,
+    setMilestoneToast,
+    currentTime,
+    notificationPermission,
+    requestNotificationPermission
+  } = useAlarm();
   const isPreview = !hasActiveSubscription(user);
 
   const [activeTab, setActiveTab] = useState('alarms');
@@ -317,6 +326,33 @@ export default function App() {
                 className="shrink-0 px-4 py-2 rounded-xl bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold hover:bg-slate-700"
               >
                 Refresh Membership
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {!isPreview && notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
+        <div className="bg-emerald-950/70 border-b border-emerald-500/30">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-bold text-white">
+                {notificationPermission === 'denied'
+                  ? '🔕 Phone alarm notifications are blocked'
+                  : '🔔 Enable Phone Alarm & Reminder Alerts'}
+              </p>
+              <p className="text-xs text-emerald-200/80">
+                {notificationPermission === 'denied'
+                  ? 'Allow notifications for AuraAlarm in your phone or browser settings so alarms can ring and show reminders.'
+                  : 'Grant permission so your alarms ring on your phone and send reminders before your scheduled wake-up time.'}
+              </p>
+            </div>
+            {notificationPermission === 'default' && (
+              <button
+                onClick={requestNotificationPermission}
+                className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-extrabold hover:from-emerald-400 hover:to-teal-400"
+              >
+                Allow Phone Alerts
               </button>
             )}
           </div>

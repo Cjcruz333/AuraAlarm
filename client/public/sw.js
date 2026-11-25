@@ -1,6 +1,6 @@
 // Service Worker for AuraAlarm Progressive Web App
 
-const CACHE_NAME = 'aura-alarm-v3';
+const CACHE_NAME = 'aura-alarm-v4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -76,10 +76,15 @@ self.addEventListener('push', (event) => {
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
+  const action = event.action;
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
-        if (client.url === '/' && 'focus' in client) {
+        if ('focus' in client) {
+          if (action === 'snooze' || action === 'dismiss') {
+            client.postMessage({ type: 'ALARM_ACTION', action });
+          }
           return client.focus();
         }
       }
@@ -88,4 +93,10 @@ self.addEventListener('notificationclick', (event) => {
       }
     })
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data?.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

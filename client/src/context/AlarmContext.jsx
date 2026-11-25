@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { api } from '../services/api.js';
 import { audioEngine } from '../services/audioService.js';
 import { speechService } from '../services/speechService.js';
+import { notificationService } from '../services/notificationService.js';
 import confetti from 'canvas-confetti';
 import { useAuth } from './AuthContext.jsx';
 import { useSettings } from './SettingsContext.jsx';
@@ -23,13 +24,31 @@ export const AlarmProvider = ({ children }) => {
 
   // Milestone alerts / Habit toast
   const [milestoneToast, setMilestoneToast] = useState(null);
+  const [notificationPermission, setNotificationPermission] = useState('default');
 
   const lastTriggeredMinuteRef = useRef('');
 
-  // Load private alarm data only after the account has an active subscription.
   useEffect(() => {
+    notificationService.registerServiceWorker();
+    notificationService.getPermissionStatus().then(setNotificationPermission);
+  }, []);
+
+  const requestNotificationPermission = async () => {
+    const status = await notificationService.requestPermission();
+    setNotificationPermission(status);
+    if (status === 'granted') {
+      notificationService.syncAlarmsToDevice(alarms);
+      showMilestoneToast('🔔 Phone alarm alerts & reminders enabled!');
+    }
+    return status;
+  };
+
+  // Load private alarm data when account has an active subscription or 7-day free trial.
+  useEffect(() => {
+    const trialEndsAt = Date.parse(user?.trialEndsAt || '');
+    const isTrialActive = !!user && user.username !== 'demo' && !(user.isPro && user.subscriptionStatus === 'active') && Number.isFinite(trialEndsAt) && trialEndsAt > Date.now();
     const expiresAt = Date.parse(user?.proExpiresAt || '');
-    const hasActiveSubscription = user?.isPro &&
+    const hasPaidSubscription = user?.isPro &&
       user.username !== 'demo' &&
       user.subscriptionStatus === 'active' &&
       (
@@ -37,7 +56,7 @@ export const AlarmProvider = ({ children }) => {
         (Number.isFinite(expiresAt) && expiresAt > Date.now())
       );
 
-    if (hasActiveSubscription) {
+    if (isTrialActive || hasPaidSubscription) {
       loadAlarms();
     } else {
       setAlarms([{
@@ -52,7 +71,14 @@ export const AlarmProvider = ({ children }) => {
         customMessage: 'Rise and shine! Today is yours.'
       }]);
     }
-  }, [user?.id, user?.isPro, user?.subscriptionStatus, user?.proPlan, user?.proExpiresAt]);
+  }, [user?.id, user?.isPro, user?.subscriptionStatus, user?.proPlan, user?.proExpiresAt, user?.trialEndsAt]);
+
+  // Sync active alarms and 10-min reminders to phone/device whenever alarms or permission change
+  useEffect(() => {
+    if (notificationPermission === 'granted') {
+      notificationService.syncAlarmsToDevice(alarms);
+    }
+  }, [alarms, notificationPermission]);
 
   const loadAlarms = async () => {
     try {
@@ -114,13 +140,13 @@ export const AlarmProvider = ({ children }) => {
         }
       }
 
-      // Check habit milestone reminders (e.g. 10:00, 14:00 hydration, 21:30 wind-down)
+      // Check habit milestone reminders (e.g. 10:00, 14:30 hydration, 21:30 wind-down)
       if (timeStr === '10:00' && now.getSeconds() === 0) {
-        showMilestoneToast('💧 Hydration Checkpoint: Drink a glass of water to fuel peak focus!');
+        showMilestoneToast('💧 Hydration Checkpoint: Drink a glass of water to fuel peak focus!', true);
       } else if (timeStr === '14:30' && now.getSeconds() === 0) {
-        showMilestoneToast('⚡ Posture & Mobility: Take a 2-minute stretch break!');
+        showMilestoneToast('⚡ Posture & Mobility: Take a 2-minute stretch break!', true);
       } else if (timeStr === '21:30' && now.getSeconds() === 0) {
-        showMilestoneToast('🌙 Twilight Wind-Down: Dim ambient lights and prepare for deep sleep.');
+        showMilestoneToast('🌙 Twilight Wind-Down: Dim ambient lights and prepare for deep sleep.', true);
       }
     }, 1000);
 
@@ -146,9 +172,12 @@ export const AlarmProvider = ({ children }) => {
     return () => clearInterval(interval);
   }, [sleepRemainingSeconds]);
 
-  const showMilestoneToast = (msg) => {
+  const showMilestoneToast = (msg, notifyPhone = false) => {
     setMilestoneToast(msg);
     setTimeout(() => setMilestoneToast(null), 8000);
+    if (notifyPhone) {
+      notificationService.showReminderNotification('AuraAlarm Reminder', msg);
+    }
   };
 
   // Trigger Alarm
@@ -157,7 +186,10 @@ export const AlarmProvider = ({ children }) => {
     // 1. Play sound
     audioEngine.playAlarmSound(alarm.soundId || 'gentle_chimes', api.resolveAssetUrl(alarm.customSoundUrl));
 
-    // 2. Play dynamic voice greeting if enabled
+    // 2. Ring/vibrate & show system notification on phone
+    notificationService.showAlarmNotification(alarm);
+
+    // 3. Play dynamic voice greeting if enabled
     if (alarm.speechGreeting !== false) {
       setTimeout(() => {
         speechService.speakGreeting(
@@ -169,8 +201,9 @@ export const AlarmProvider = ({ children }) => {
     }
   };
 
-  // Snooze Alarm (+5 minutes)
+  // Snooze Alarm
   const snoozeAlarm = () => {
+    const current = ringingAlarm;
     audioEngine.stopAlarmSound();
     speechService.stop();
     setRingingAlarm(null);
@@ -179,8 +212,8 @@ export const AlarmProvider = ({ children }) => {
       minutes: snoozeDurationMinutes
     }));
     setTimeout(() => {
-      if (ringingAlarm) {
-        triggerAlarm(ringingAlarm);
+      if (current) {
+        triggerAlarm(current);
       }
     }, snoozeDurationMinutes * 60 * 1000);
   };
@@ -260,7 +293,9 @@ export const AlarmProvider = ({ children }) => {
         stopSleepSound,
         adjustSleepVolume,
         milestoneToast,
-        setMilestoneToast
+        setMilestoneToast,
+        notificationPermission,
+        requestNotificationPermission
       }}
     >
       {children}
