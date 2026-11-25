@@ -88,11 +88,9 @@ export const AlarmProvider = ({ children }) => {
     }
   }, [user?.id, user?.isPro, user?.subscriptionStatus, user?.proPlan, user?.proExpiresAt, user?.trialEndsAt]);
 
-  // Sync active alarms and 10-min reminders to phone/device whenever alarms or permission change
+  // Sync active alarms and reminders to phone/device whenever alarms or permission change
   useEffect(() => {
-    if (notificationPermission === 'granted') {
-      notificationService.syncAlarmsToDevice(alarms);
-    }
+    notificationService.syncAlarmsToDevice(alarms);
   }, [alarms, notificationPermission]);
 
   const loadAlarms = async () => {

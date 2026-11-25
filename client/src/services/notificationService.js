@@ -215,12 +215,11 @@ class NotificationService {
    */
   async syncAlarmsToDevice(alarms = []) {
     const permission = await this.getPermissionStatus();
-    if (permission !== 'granted') return;
-
     const activeAlarms = (alarms || []).filter(a => a && a.active);
     const now = new Date();
 
     if (this.isNative()) {
+      if (permission !== 'granted') return;
       try {
         await this.ensureNativeChannels();
         const pending = await LocalNotifications.getPending();
@@ -266,30 +265,56 @@ class NotificationService {
       return;
     }
 
-    // Web / PWA: schedule in-page advance reminders and sync with Service Worker
+    // Web / PWA: schedule exact alarm timers AND sync with Service Worker
     this.clearWebTimers();
-    const reg = await this.registerServiceWorker();
-    if (reg?.active) {
-      reg.active.postMessage({ type: 'SYNC_ALARMS', alarms: activeAlarms });
-    }
 
+    const alarmsForSW = [];
     const maxDelayMs = 24 * 60 * 60 * 1000;
+
     for (const alarm of activeAlarms) {
       const triggerAt = this.getNextTriggerDate(alarm, now);
       if (!triggerAt) continue;
 
-      const reminderAt = new Date(triggerAt.getTime() - 10 * 60 * 1000);
-      const reminderDelay = reminderAt.getTime() - now.getTime();
-      if (reminderDelay > 15000 && reminderDelay <= maxDelayMs) {
-        const tId = setTimeout(() => {
-          this.showReminderNotification(
-            '🔔 Upcoming Alarm in 10 mins',
-            `${alarm.label || 'Wake-Up Alarm'} is scheduled for ${alarm.time}.`,
-            `reminder-${alarm.id}`
-          );
-        }, reminderDelay);
-        this.webTimers.push(tId);
+      const delayMs = triggerAt.getTime() - now.getTime();
+      if (delayMs > 0 && delayMs <= maxDelayMs) {
+        // 1. Direct Web timer for foreground / active audio session
+        const alarmTimer = setTimeout(() => {
+          this.showAlarmNotification(alarm);
+        }, delayMs);
+        this.webTimers.push(alarmTimer);
+
+        // 2. Prepare payload for Service Worker background scheduling
+        alarmsForSW.push({
+          ...alarm,
+          triggerTimestamp: triggerAt.getTime()
+        });
+
+        // 3. 10-minute advance reminder
+        const reminderAt = new Date(triggerAt.getTime() - 10 * 60 * 1000);
+        const reminderDelay = reminderAt.getTime() - now.getTime();
+        if (reminderDelay > 15000 && reminderDelay <= maxDelayMs) {
+          const reminderTimer = setTimeout(() => {
+            this.showReminderNotification(
+              '🔔 Upcoming Alarm in 10 mins',
+              `${alarm.label || 'Wake-Up Alarm'} is scheduled for ${alarm.time}.`,
+              `reminder-${alarm.id}`
+            );
+          }, reminderDelay);
+          this.webTimers.push(reminderTimer);
+        }
       }
+    }
+
+    // Post to Service Worker to schedule background notifications on homescreen/lockscreen
+    try {
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg?.active) {
+          reg.active.postMessage({ type: 'SYNC_ALARMS', alarms: alarmsForSW });
+        }
+      }
+    } catch (e) {
+      console.warn('Could not post SYNC_ALARMS to service worker:', e);
     }
   }
 
@@ -344,14 +369,22 @@ class NotificationService {
       badge: '/icons/icon-192.png',
       tag: `aura-alarm-${alarm?.id || 'active'}`,
       renotify: true,
-      requireInteraction: true,
       vibrate: [500, 200, 500, 200, 800],
-      actions: [
-        { action: 'snooze', title: 'Snooze' },
-        { action: 'dismiss', title: 'Dismiss' }
-      ],
       data: { url: `/?ringingAlarmId=${alarm?.id || ''}`, alarmId: alarm?.id }
     };
+
+    // Try service worker ready registration first (essential for mobile PWA on iOS and Android)
+    try {
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg && typeof reg.showNotification === 'function') {
+          await reg.showNotification(title, options);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('SW ready showNotification error, trying fallback:', err);
+    }
 
     try {
       const reg = await this.registerServiceWorker();
@@ -360,16 +393,17 @@ class NotificationService {
         return;
       }
     } catch (err) {
-      console.warn('SW showNotification failed, falling back to Notification API:', err);
+      console.warn('SW showNotification failed, trying Notification API:', err);
     }
 
     try {
-      new Notification(title, {
-        body,
-        icon: '/icons/icon-192.png',
-        tag: options.tag,
-        requireInteraction: true
-      });
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification(title, {
+          body,
+          icon: '/icons/icon-192.png',
+          tag: options.tag
+        });
+      }
     } catch (err) {
       console.warn('Web Notification fallback failed:', err);
     }

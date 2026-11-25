@@ -241,6 +241,11 @@ export default function App() {
       openSubscription();
       return;
     }
+    if (notificationPermission === 'default') {
+      try {
+        await requestNotificationPermission();
+      } catch (e) {}
+    }
     try {
       await api.toggleAlarm(id);
       loadAlarms();
