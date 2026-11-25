@@ -16,9 +16,10 @@
       "showSpinner": false
     },
     "LocalNotifications": {
-      "smallIcon": "ic_stat_icon_config_sample",
+      "smallIcon": "ic_launcher",
       "iconColor": "#6366f1",
-      "sound": "alarm_chime.wav"
+      "sound": "alarm_chime.wav",
+      "presentationOptions": ["badge", "sound", "alert"]
     }
   }
 }

@@ -10,6 +10,30 @@ class NotificationService {
     this.swRegistration = null;
     this.webTimers = [];
     this.channelsInitialized = false;
+    this.listenersRegistered = false;
+  }
+
+  registerListeners(onAlarmTrigger) {
+    if (!this.isNative() || this.listenersRegistered) return;
+    this.listenersRegistered = true;
+
+    try {
+      LocalNotifications.addListener('localNotificationReceived', (notification) => {
+        const extra = notification?.extra;
+        if (extra?.type === 'alarm' && extra?.alarmId && typeof onAlarmTrigger === 'function') {
+          onAlarmTrigger(extra.alarmId);
+        }
+      });
+
+      LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+        const extra = action?.notification?.extra;
+        if (extra?.type === 'alarm' && extra?.alarmId && typeof onAlarmTrigger === 'function') {
+          onAlarmTrigger(extra.alarmId);
+        }
+      });
+    } catch (err) {
+      console.warn('Could not register native notification listeners:', err);
+    }
   }
 
   isNative() {

@@ -7,6 +7,33 @@ class AudioEngine {
     this.customAudioPlayer = null;
     this.alarmInterval = null;
     this.masterGain = null;
+    this.unlocked = false;
+    this.setupAutoUnlock();
+  }
+
+  setupAutoUnlock() {
+    if (typeof window === 'undefined') return;
+    const unlock = async () => {
+      try {
+        const ctx = this.init();
+        if (ctx.state === 'suspended') {
+          await ctx.resume();
+        }
+        if (!this.unlocked && ctx.state === 'running') {
+          const buf = ctx.createBuffer(1, 1, 22050);
+          const src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.connect(ctx.destination);
+          src.start(0);
+          this.unlocked = true;
+        }
+      } catch {
+        // ignore until next gesture
+      }
+    };
+    ['pointerdown', 'touchstart', 'click', 'keydown'].forEach(evt => {
+      window.addEventListener(evt, unlock, { passive: true });
+    });
   }
 
   init() {
@@ -272,9 +299,16 @@ class AudioEngine {
 
   // --- ALARM SOUND GENERATORS ---
 
-  playAlarmSound(soundId = 'gentle_chimes', customUrl = null) {
+  async playAlarmSound(soundId = 'gentle_chimes', customUrl = null) {
     this.stopAlarmSound();
-    this.init();
+    const ctx = this.init();
+    if (ctx.state === 'suspended') {
+      try {
+        await ctx.resume();
+      } catch {
+        // ignore
+      }
+    }
 
     // If custom uploaded audio exists, play it
     if (customUrl) {
@@ -289,6 +323,18 @@ class AudioEngine {
         return;
       } catch (err) {
         console.error('Custom audio error:', err);
+      }
+    }
+
+    // If WebAudio is still suspended by browser policy, also try HTML5 Audio chime file
+    if (ctx.state !== 'running') {
+      try {
+        this.customAudioPlayer = new Audio('/alarm_chime.wav');
+        this.customAudioPlayer.loop = true;
+        this.customAudioPlayer.volume = 1.0;
+        this.customAudioPlayer.play().catch(() => {});
+      } catch {
+        // ignore
       }
     }
 

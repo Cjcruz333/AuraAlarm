@@ -89,9 +89,9 @@ export const AlarmProvider = ({ children }) => {
     }
   };
 
-  // Clock tick & Alarm Checker (runs every 1 second)
+  // Clock tick & Alarm Checker (runs every 1 second + on screen unlock / focus)
   useEffect(() => {
-    const timer = setInterval(() => {
+    const checkAlarms = () => {
       const now = new Date();
       setCurrentTime(now);
 
@@ -107,7 +107,7 @@ export const AlarmProvider = ({ children }) => {
       if (lastTriggeredMinuteRef.current !== timeStr && !ringingAlarm) {
         const matching = alarms.find(a => {
           if (!a.active) return false;
-          
+
           let alarmTimeStr = timeStr;
           let alarmDay = currentDay;
 
@@ -148,9 +148,29 @@ export const AlarmProvider = ({ children }) => {
       } else if (timeStr === '21:30' && now.getSeconds() === 0) {
         showMilestoneToast('🌙 Twilight Wind-Down: Dim ambient lights and prepare for deep sleep.', true);
       }
-    }, 1000);
+    };
 
-    return () => clearInterval(timer);
+    const timer = setInterval(checkAlarms, 1000);
+    const onResume = () => {
+      if (document.visibilityState === 'visible') {
+        checkAlarms();
+      }
+    };
+    document.addEventListener('visibilitychange', onResume);
+    window.addEventListener('focus', checkAlarms);
+
+    notificationService.registerListeners((alarmId) => {
+      const found = alarms.find(a => a.id === alarmId);
+      if (found) {
+        triggerAlarm(found);
+      }
+    });
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', onResume);
+      window.removeEventListener('focus', checkAlarms);
+    };
   }, [alarms, ringingAlarm]);
 
   // Sleep Aid Timer Countdown
