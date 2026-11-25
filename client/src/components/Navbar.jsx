@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Bell, 
   Moon, 
@@ -106,11 +106,11 @@ export const Navbar = ({
                   className="text-[10px] sm:text-xs text-slate-400 font-medium truncate"
                   title={user ? `${greeting}, ${displayName}` : formattedTime}
                 >
-                  <span className="hidden sm:inline">{formattedDate} â€¢ </span>
+                  <span className="hidden sm:inline">{formattedDate} • </span>
                   <span className="text-slate-200 font-semibold">
                     {user ? `${greeting}, ${firstName}` : formattedTime}
                   </span>
-                  {user && <span className="hidden sm:inline"> â€¢ {formattedTime}</span>}
+                  {user && <span className="hidden sm:inline"> • {formattedTime}</span>}
                 </p>
               </div>
             </div>
@@ -366,6 +366,3 @@ export const Navbar = ({
     </header>
   );
 };
-
-
-

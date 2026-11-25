@@ -51,7 +51,15 @@ const getPasswordResetTokenFromHash = () => {
     : '';
 };
 
+const isFreeTrialActive = (user) => {
+  if (!user || user.username === 'demo') return false;
+  if (user.isPro && user.subscriptionStatus === 'active') return false;
+  const trialEndsAt = Date.parse(user.trialEndsAt || '');
+  return Number.isFinite(trialEndsAt) && trialEndsAt > Date.now();
+};
+
 const hasActiveSubscription = (user) => {
+  if (isFreeTrialActive(user)) return true;
   if (!user?.isPro || user.username === 'demo' || user.subscriptionStatus !== 'active') return false;
   if (user.proPlan === 'pro_lifetime' && !user.proExpiresAt) return true;
   const expiresAt = Date.parse(user.proExpiresAt || '');

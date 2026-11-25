@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   X, 
   Crown, 
@@ -27,18 +27,18 @@ import { api } from '../services/api.js';
 
 // Supported worldwide currencies and rates
 const CURRENCIES = {
-  USD: { symbol: '$', name: 'US Dollar', rate: 1.0, flag: 'ðŸ‡ºðŸ‡¸', code: 'USD' },
-  EUR: { symbol: 'â‚¬', name: 'Euro', rate: 0.92, flag: 'ðŸ‡ªðŸ‡º', code: 'EUR' },
-  GBP: { symbol: 'Â£', name: 'British Pound', rate: 0.79, flag: 'ðŸ‡¬ðŸ‡§', code: 'GBP' },
-  NGN: { symbol: 'â‚¦', name: 'Nigerian Naira', rate: 1450, flag: 'ðŸ‡³ðŸ‡¬', code: 'NGN' },
-  CAD: { symbol: 'CA$', name: 'Canadian Dollar', rate: 1.37, flag: 'ðŸ‡¨ðŸ‡¦', code: 'CAD' },
-  AUD: { symbol: 'AU$', name: 'Australian Dollar', rate: 1.52, flag: 'ðŸ‡¦ðŸ‡º', code: 'AUD' },
-  INR: { symbol: 'â‚¹', name: 'Indian Rupee', rate: 84.5, flag: 'ðŸ‡®ðŸ‡³', code: 'INR' },
-  ZAR: { symbol: 'R', name: 'South African Rand', rate: 18.2, flag: 'ðŸ‡¿ðŸ‡¦', code: 'ZAR' },
-  KES: { symbol: 'KSh', name: 'Kenyan Shilling', rate: 130, flag: 'ðŸ‡°ðŸ‡ª', code: 'KES' },
-  GHS: { symbol: 'GHâ‚µ', name: 'Ghanaian Cedi', rate: 15.5, flag: 'ðŸ‡¬ðŸ‡­', code: 'GHS' },
-  AED: { symbol: 'AED', name: 'UAE Dirham', rate: 3.67, flag: 'ðŸ‡¦ðŸ‡ª', code: 'AED' },
-  JPY: { symbol: 'Â¥', name: 'Japanese Yen', rate: 154, flag: 'ðŸ‡¯ðŸ‡µ', code: 'JPY' }
+  USD: { symbol: '$', name: 'US Dollar', rate: 1.0, flag: '🇺🇸', code: 'USD' },
+  EUR: { symbol: '€', name: 'Euro', rate: 0.92, flag: '🇪🇺', code: 'EUR' },
+  GBP: { symbol: '£', name: 'British Pound', rate: 0.79, flag: '🇬🇧', code: 'GBP' },
+  NGN: { symbol: '₦', name: 'Nigerian Naira', rate: 1450, flag: '🇳🇬', code: 'NGN' },
+  CAD: { symbol: 'CA$', name: 'Canadian Dollar', rate: 1.37, flag: '🇨🇦', code: 'CAD' },
+  AUD: { symbol: 'AU$', name: 'Australian Dollar', rate: 1.52, flag: '🇦🇺', code: 'AUD' },
+  INR: { symbol: '₹', name: 'Indian Rupee', rate: 84.5, flag: '🇮🇳', code: 'INR' },
+  ZAR: { symbol: 'R', name: 'South African Rand', rate: 18.2, flag: '🇿🇦', code: 'ZAR' },
+  KES: { symbol: 'KSh', name: 'Kenyan Shilling', rate: 130, flag: '🇰🇪', code: 'KES' },
+  GHS: { symbol: 'GH₵', name: 'Ghanaian Cedi', rate: 15.5, flag: '🇬🇭', code: 'GHS' },
+  AED: { symbol: 'AED', name: 'UAE Dirham', rate: 3.67, flag: '🇦🇪', code: 'AED' },
+  JPY: { symbol: '¥', name: 'Japanese Yen', rate: 154, flag: '🇯🇵', code: 'JPY' }
 };
 
 const POPULAR_BANKS = [
@@ -166,7 +166,6 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
         } else {
           setPendingProof(null);
         }
-        // Free trial metadata
         setIsTrialActive(!!res.isFreeTrialActive);
         setTrialDaysLeft(res.trialDaysLeft ?? null);
         setTrialEndsAt(res.trialEndsAt ?? null);
@@ -259,7 +258,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
       badge: 'BEST VALUE',
       highlight: false,
       features: [
-        'Zero Recurring Fees â€” Lifetime Access to All Features',
+        'Zero Recurring Fees — Lifetime Access to All Features',
         'All Future Sleep Sounds, AI Voice Drops & Updates Included',
         'Exclusive Golden Founder Badge on Dashboard',
         'Direct 1-on-1 Support (okeke12347@gmail.com)',
@@ -417,7 +416,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
             <div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-2">
                 <Clock className="w-3.5 h-3.5" />
-                Proof Submitted â€¢ Awaiting Bank Verification
+                Proof Submitted • Awaiting Bank Verification
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
                 Payment Verification in Progress
@@ -432,7 +431,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
               <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                 <span className="text-sm font-bold text-white">{pendingProof.planName || currentPlan.name}</span>
                 <span className="text-[11px] font-bold font-mono text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/30">
-                  â³ PENDING APPROVAL
+                  ⏳ PENDING APPROVAL
                 </span>
               </div>
 
@@ -475,7 +474,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
             </div>
 
             <p className="text-xs text-slate-400 max-w-sm mx-auto">
-              ðŸ”’ VIP Pro access will unlock automatically as soon as Okeke Chiemeria John confirms your transfer in Fidelity Bank.
+              🔒 VIP Pro access will unlock automatically as soon as Okeke Chiemeria John confirms your transfer in Fidelity Bank.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -524,7 +523,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                   </p>
                   <p className="text-xs text-emerald-200/70 mt-0.5">
                     {trialDaysLeft === 0
-                      ? "Your trial expires today — subscribe now to keep all Pro features."
+                      ? 'Your trial expires today — subscribe now to keep all Pro features.'
                       : `${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''} remaining${trialEndsAt ? ` · Expires ${new Date(trialEndsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}`
                     }
                   </p>
@@ -636,7 +635,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                   }`}
                 >
                   <Building2 className="w-4 h-4 text-amber-400 mb-1" />
-                  <span>Fidelity Bank & USSD (â‚¦ NGN)</span>
+                  <span>Fidelity Bank & USSD (₦ NGN)</span>
                 </button>
 
                 <button
@@ -649,7 +648,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                   }`}
                 >
                   <CreditCard className="w-4 h-4 text-indigo-400 mb-1" />
-                  <span>Global Cards ($ / â‚¬ / Â£ / â‚¦)</span>
+                  <span>Global Cards ($ / € / £ / ₦)</span>
                 </button>
 
                 <button
@@ -662,7 +661,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                   }`}
                 >
                   <Landmark className="w-4 h-4 text-cyan-400 mb-1" />
-                  <span>Int'l SWIFT Wire ($ USD / â‚¬ EUR)</span>
+                  <span>Int'l SWIFT Wire ($ USD / € EUR)</span>
                 </button>
 
                 <button
@@ -735,7 +734,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
 
                     {/* USSD Quick Dial */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 gap-1">
-                      <span>ðŸ’¡ <strong>Quick USSD:</strong> Dial <code className="text-amber-300 font-mono">*770*{FIDELITY_ACCOUNT_NUMBER}*AMOUNT#</code></span>
+                      <span>💡 <strong>Quick USSD:</strong> Dial <code className="text-amber-300 font-mono">*770*{FIDELITY_ACCOUNT_NUMBER}*AMOUNT#</code></span>
                       <button
                         type="button"
                         onClick={() => copyText(`*770*${FIDELITY_ACCOUNT_NUMBER}#`, setCopiedUssd)}
@@ -876,7 +875,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                         type="text"
                         value={cardNumber}
                         onChange={(e) => handleCardNumberChange(e.target.value)}
-                        placeholder="â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢"
+                        placeholder="•••• •••• •••• ••••"
                         maxLength={19}
                         className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white font-mono focus:outline-none focus:border-indigo-400"
                       />
@@ -950,7 +949,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                     </div>
 
                     <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300">
-                      <strong>Bank Address:</strong> Fidelity Place, 2 Kofo Abayomi Street, Victoria Island, Lagos, Nigeria â€¢ Sort Code: 070150003
+                      <strong>Bank Address:</strong> Fidelity Place, 2 Kofo Abayomi Street, Victoria Island, Lagos, Nigeria • Sort Code: 070150003
                     </div>
                   </div>
 
@@ -983,7 +982,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                           type="text"
                           value={senderBank}
                           onChange={(e) => setSenderBank(e.target.value)}
-                          placeholder="e.g. Chase Bank ($ USD) / Barclays (Â£ GBP)"
+                          placeholder="e.g. Chase Bank ($ USD) / Barclays (£ GBP)"
                           className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
                         />
                       </div>
@@ -1156,4 +1155,3 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
     </div>
   );
 };
-

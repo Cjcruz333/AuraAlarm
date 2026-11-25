@@ -37,6 +37,20 @@ const toSafeUser = user => {
   return { ...userSafe, isAdmin: isAdminUser(user) };
 };
 
+// Grant a one-time 7-day free trial to existing non-paid users who don't have one yet
+const ensureInitialTrial = async (user) => {
+  if (!user || user.username === 'demo' || user.isPro || user.trialStartedAt || user.trialEndsAt) {
+    return user;
+  }
+  const now = new Date();
+  const trialEndsAt = new Date(now);
+  trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+  return db.update('users', u => u.id === user.id, {
+    trialStartedAt: now.toISOString(),
+    trialEndsAt: trialEndsAt.toISOString()
+  });
+};
+
 // Setup multer for photo uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -217,8 +231,9 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const token = signToken(user);
-    res.json({ token, user: toSafeUser(user) });
+    const hydratedUser = await ensureInitialTrial(user);
+    const token = signToken(hydratedUser);
+    res.json({ token, user: toSafeUser(hydratedUser) });
   } catch (err) {
     console.error('Login error:', err);
     res.status(500).json({ error: 'Login failed' });
@@ -334,8 +349,9 @@ router.post('/biometric/login', async (req, res) => {
       return res.status(401).json({ error: 'Biometric credential not recognized' });
     }
 
-    const token = signToken(user);
-    res.json({ token, user: toSafeUser(user), biometricVerified: true });
+    const hydratedUser = await ensureInitialTrial(user);
+    const token = signToken(hydratedUser);
+    res.json({ token, user: toSafeUser(hydratedUser), biometricVerified: true });
   } catch (err) {
     console.error('Biometric login error:', err);
     res.status(500).json({ error: 'Biometric verification failed' });
@@ -373,11 +389,12 @@ router.post('/biometric/register', subscriberMiddleware, async (req, res) => {
 });
 
 // GET /me - Get active profile
-router.get('/me', authMiddleware, (req, res) => {
+router.get('/me', authMiddleware, async (req, res) => {
   const user = db.findOne('users', u => u.id === req.user.id);
   if (!user) return res.status(404).json({ error: 'User not found' });
 
-  res.json({ user: toSafeUser(user) });
+  const hydratedUser = await ensureInitialTrial(user);
+  res.json({ user: toSafeUser(hydratedUser) });
 });
 
 // PUT /loved-one - Update loved one configuration
