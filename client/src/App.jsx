@@ -41,6 +41,7 @@ import { WorldClock } from './components/WorldClock.jsx';
 import { AdminProofModal } from './components/AdminProofModal.jsx';
 import { ReferralRewards } from './components/ReferralRewards.jsx';
 import { SettingsPage } from './components/SettingsPage.jsx';
+import { notificationService } from './services/notificationService.js';
 import { Stopwatch } from './components/Stopwatch.jsx';
 import { useSettings } from './context/SettingsContext.jsx';
 
@@ -332,31 +333,52 @@ export default function App() {
         </div>
       )}
 
-      {!isPreview && notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && (
-        <div className="bg-emerald-950/70 border-b border-emerald-500/30">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-bold text-white">
-                {notificationPermission === 'denied'
-                  ? '🔕 Phone alarm notifications are blocked'
-                  : '🔔 Enable Phone Alarm & Reminder Alerts'}
-              </p>
-              <p className="text-xs text-emerald-200/80">
-                {notificationPermission === 'denied'
-                  ? 'Allow notifications for AuraAlarm in your phone or browser settings so alarms can ring and show reminders.'
-                  : 'Grant permission so your alarms ring on your phone and send reminders before your scheduled wake-up time.'}
-              </p>
+      {!isPreview && notificationPermission !== 'granted' && (
+        notificationPermission !== 'unsupported' ? (
+          <div className="bg-emerald-950/70 border-b border-emerald-500/30">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-white">
+                  {notificationPermission === 'denied'
+                    ? '🔕 Phone alarm notifications are blocked'
+                    : '🔔 Enable Phone Alarm & Reminder Alerts'}
+                </p>
+                <p className="text-xs text-emerald-200/80">
+                  {notificationPermission === 'denied'
+                    ? 'Allow notifications for AuraAlarm in your phone or browser settings so alarms can ring and show reminders.'
+                    : 'Grant permission so your alarms ring on your phone and send reminders before your scheduled wake-up time.'}
+                </p>
+              </div>
+              {notificationPermission === 'default' && (
+                <button
+                  onClick={requestNotificationPermission}
+                  className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-extrabold hover:from-emerald-400 hover:to-teal-400"
+                >
+                  Allow Phone Alerts
+                </button>
+              )}
             </div>
-            {notificationPermission === 'default' && (
-              <button
-                onClick={requestNotificationPermission}
-                className="shrink-0 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 text-xs font-extrabold hover:from-emerald-400 hover:to-teal-400"
-              >
-                Allow Phone Alerts
-              </button>
-            )}
           </div>
-        </div>
+        ) : notificationService.isIOSBrowser() && !notificationService.isStandalonePWA() ? (
+          <div className="bg-indigo-950/80 border-b border-indigo-500/30">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-bold text-white">
+                  📱 Enable iPhone Alarm Alerts & Reminders
+                </p>
+                <p className="text-xs text-indigo-200/85">
+                  On iPhone, tap Safari Share (↑) → <strong>Add to Home Screen</strong>, then open AuraAlarm from your Home Screen to allow phone notifications & alarm reminders.
+                </p>
+              </div>
+              <button
+                onClick={() => setIsInstallModalOpen(true)}
+                className="shrink-0 px-4 py-2 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white text-xs font-extrabold"
+              >
+                How to Install
+              </button>
+            </div>
+          </div>
+        ) : null
       )}
 
       {/* Habit Milestone / Notification Toast Bar */}
