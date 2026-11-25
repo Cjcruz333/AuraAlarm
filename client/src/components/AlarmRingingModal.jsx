@@ -31,13 +31,13 @@ export const AlarmRingingModal = () => {
 
   // Dynamically adapt greeting if it's afternoon or evening
   const currentPeriod = greeting.includes('morning') ? 'Morning' : greeting.includes('afternoon') ? 'Afternoon' : 'Evening';
-  const customMessage = React.useMemo(() => {
+  const customMessage = (() => {
     if (!rawMessage) return `${greeting || 'Good day'}! Have a wonderful day!`;
     if (/good morning/i.test(rawMessage) && greeting && !greeting.toLowerCase().includes('morning')) {
       return rawMessage.replace(/good morning/i, greeting);
     }
     return rawMessage;
-  }, [rawMessage, greeting]);
+  })();
 
   const handleSpeakAgain = () => {
     speechService.speakGreeting(user?.name || '', lovedOneName, customMessage);
