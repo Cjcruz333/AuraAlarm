@@ -345,7 +345,7 @@ class NotificationService {
         { action: 'snooze', title: 'Snooze' },
         { action: 'dismiss', title: 'Dismiss' }
       ],
-      data: { url: '/', alarmId: alarm?.id }
+      data: { url: `/?ringingAlarmId=${alarm?.id || ''}`, alarmId: alarm?.id }
     };
 
     try {

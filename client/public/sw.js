@@ -77,19 +77,23 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const action = event.action;
+  const notifData = event.notification.data || {};
+  const targetUrl = notifData.url || (notifData.alarmId ? `/?ringingAlarmId=${notifData.alarmId}` : '/');
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
       for (const client of clientList) {
         if ('focus' in client) {
           if (action === 'snooze' || action === 'dismiss') {
-            client.postMessage({ type: 'ALARM_ACTION', action });
+            client.postMessage({ type: 'ALARM_ACTION', action, alarmId: notifData.alarmId });
+          } else if (notifData.alarmId) {
+            client.postMessage({ type: 'TRIGGER_ALARM', alarmId: notifData.alarmId });
           }
           return client.focus();
         }
       }
       if (clients.openWindow) {
-        return clients.openWindow('/');
+        return clients.openWindow(targetUrl);
       }
     })
   );

@@ -103,9 +103,10 @@ export const InstallAppModal = ({ isOpen, onClose }) => {
               <Apple className="w-4 h-4" />
             </div>
             <div className="text-xs">
-              <span className="font-bold text-white block mb-0.5">Apple iPhone & iPad (Safari)</span>
+              <span className="font-bold text-white block mb-0.5">Apple iPhone & iPad (Safari — Required for Lock-Screen Alerts)</span>
               <p className="text-slate-300">
-                Tap the Safari <Share className="w-3.5 h-3.5 inline mx-1 text-indigo-400" /> Share button &rarr; scroll down &rarr; tap <strong>"Add to Home Screen"</strong> <PlusSquare className="w-3.5 h-3.5 inline mx-1 text-indigo-400" />.
+                1. Tap the Safari <Share className="w-3.5 h-3.5 inline mx-1 text-indigo-400" /> Share button &rarr; scroll down &rarr; tap <strong>"Add to Home Screen"</strong> <PlusSquare className="w-3.5 h-3.5 inline mx-1 text-indigo-400" />.<br />
+                2. Open the <strong>AuraAlarm</strong> icon from your iPhone Home Screen and tap <strong>"Allow Phone Alerts"</strong> so alarms ring on your lock screen and home screen.
               </p>
             </div>
           </div>

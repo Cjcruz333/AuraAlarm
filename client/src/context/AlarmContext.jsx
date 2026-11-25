@@ -172,10 +172,42 @@ export const AlarmProvider = ({ children }) => {
       }
     });
 
+    // Listen for Service Worker messages (from lock screen notification taps / actions)
+    const handleSwMessage = (event) => {
+      const { type, action, alarmId } = event.data || {};
+      if (type === 'TRIGGER_ALARM' && alarmId) {
+        const found = alarms.find(a => a.id === alarmId);
+        if (found) triggerAlarm(found);
+      } else if (type === 'ALARM_ACTION') {
+        if (action === 'snooze') snoozeAlarm();
+        if (action === 'dismiss') dismissAlarm();
+      }
+    };
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    }
+
+    // Check if launched with ?ringingAlarmId= parameter
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const ringingParam = params.get('ringingAlarmId');
+      if (ringingParam && alarms.length > 0) {
+        const match = alarms.find(a => a.id === ringingParam);
+        if (match) {
+          triggerAlarm(match);
+          const cleanUrl = window.location.pathname + window.location.hash;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      }
+    } catch {}
+
     return () => {
       clearInterval(timer);
       document.removeEventListener('visibilitychange', onResume);
       window.removeEventListener('focus', checkAlarms);
+      if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+        navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+      }
     };
   }, [alarms, ringingAlarm]);
 
