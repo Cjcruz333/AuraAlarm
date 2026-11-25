@@ -265,10 +265,15 @@ export const AlarmProvider = ({ children }) => {
     // 3. Play dynamic voice greeting if enabled
     if (alarm.speechGreeting !== false) {
       setTimeout(() => {
+        const timeGreeting = speechService.getTimeBasedGreeting();
+        let msg = alarm.customMessage || `${timeGreeting}! You are capable of amazing things.`;
+        if (/good morning/i.test(msg) && !timeGreeting.toLowerCase().includes('morning')) {
+          msg = msg.replace(/good morning/i, timeGreeting);
+        }
         speechService.speakGreeting(
           '',
           alarm.lovedOneName || 'Your Loved One',
-          alarm.customMessage || 'Rise and shine, champion! You are capable of amazing things.'
+          msg
         );
       }, 1000);
     }

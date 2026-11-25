@@ -309,7 +309,12 @@ class NotificationService {
     if (permission !== 'granted') return;
 
     const title = `⏰ ${alarm?.label || 'AuraAlarm Wake-Up Call'} (${alarm?.time || 'Now'})`;
-    const body = alarm?.customMessage || 'Good morning! Time to rise and shine.';
+    const currentHour = new Date().getHours();
+    const timeGreeting = currentHour < 12 ? 'Good morning' : currentHour < 17 ? 'Good afternoon' : 'Good evening';
+    let body = alarm?.customMessage || `${timeGreeting}! Time to rise and shine.`;
+    if (/good morning/i.test(body) && currentHour >= 12) {
+      body = body.replace(/good morning/i, timeGreeting);
+    }
 
     if (this.isNative()) {
       try {

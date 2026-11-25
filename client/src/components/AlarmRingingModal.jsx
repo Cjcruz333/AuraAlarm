@@ -27,7 +27,17 @@ export const AlarmRingingModal = () => {
     'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=600&auto=format&fit=crop&q=80');
 
   const lovedOneName = ringingAlarm.lovedOneName || user?.lovedOne?.name || 'Someone Special';
-  const customMessage = ringingAlarm.customMessage || user?.lovedOne?.message || 'Rise and shine! Today holds limitless possibilities.';
+  const rawMessage = ringingAlarm.customMessage || user?.lovedOne?.message || `${greeting || 'Good day'}! Today holds limitless possibilities.`;
+
+  // Dynamically adapt greeting if it's afternoon or evening
+  const currentPeriod = greeting.includes('morning') ? 'Morning' : greeting.includes('afternoon') ? 'Afternoon' : 'Evening';
+  const customMessage = React.useMemo(() => {
+    if (!rawMessage) return `${greeting || 'Good day'}! Have a wonderful day!`;
+    if (/good morning/i.test(rawMessage) && greeting && !greeting.toLowerCase().includes('morning')) {
+      return rawMessage.replace(/good morning/i, greeting);
+    }
+    return rawMessage;
+  }, [rawMessage, greeting]);
 
   const handleSpeakAgain = () => {
     speechService.speakGreeting(user?.name || '', lovedOneName, customMessage);
@@ -85,7 +95,7 @@ export const AlarmRingingModal = () => {
         {/* Loved One Personalized Message */}
         <div className="p-3.5 rounded-2xl bg-white/5 border border-white/10 w-full mb-6">
           <p className="text-xs text-slate-400 uppercase tracking-widest font-semibold mb-1">
-            Morning Wish from {lovedOneName}
+            {currentPeriod} Wish from {lovedOneName}
           </p>
           <p className="text-sm sm:text-base text-slate-200 italic font-medium">
             "{customMessage}"
