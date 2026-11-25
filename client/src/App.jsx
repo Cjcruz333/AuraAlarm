@@ -249,6 +249,27 @@ export default function App() {
     }
   };
 
+  const handleToggleAmPm = async (id) => {
+    if (isPreview) {
+      openSubscription();
+      return;
+    }
+    const target = alarms.find(a => a.id === id);
+    if (!target || !target.time) return;
+    const [hStr, mStr] = String(target.time).split(':');
+    let h = parseInt(hStr, 10);
+    if (isNaN(h)) return;
+    // Flip by 12 hours: e.g. 01:57 -> 13:57, 13:57 -> 01:57
+    h = (h + 12) % 24;
+    const newTime = `${String(h).padStart(2, '0')}:${mStr || '00'}`;
+    try {
+      await api.updateAlarm(id, { ...target, time: newTime });
+      loadAlarms();
+    } catch (err) {
+      console.error('Toggle AM/PM error:', err);
+    }
+  };
+
   const handleDeleteAlarm = async (id) => {
     if (isPreview) {
       openSubscription();
@@ -564,6 +585,7 @@ export default function App() {
                   key={alarm.id}
                   alarm={alarm}
                   onToggle={handleToggleAlarm}
+                  onToggleAmPm={handleToggleAmPm}
                   onEdit={handleOpenEditAlarm}
                   onDelete={handleDeleteAlarm}
                   onTest={testAlarm}

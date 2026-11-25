@@ -129,7 +129,13 @@ export const AlarmProvider = ({ children }) => {
             } catch {}
           }
 
-          if (a.time !== alarmTimeStr) return false;
+          const normalize = (t) => {
+            if (!t) return '';
+            const p = String(t).trim().split(':');
+            return p.length >= 2 ? `${p[0].padStart(2, '0')}:${p[1].padStart(2, '0')}` : String(t);
+          };
+
+          if (normalize(a.time) !== normalize(alarmTimeStr)) return false;
           if (a.days && a.days.length > 0 && !a.days.includes(alarmDay)) return false;
           return true;
         });

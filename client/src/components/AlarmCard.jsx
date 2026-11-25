@@ -1,10 +1,32 @@
 import React from 'react';
-import { Volume2, Heart, Play, Edit3, Trash2, Globe } from 'lucide-react';
+import { Volume2, Heart, Play, Edit3, Trash2, Globe, Clock, Sun, Moon } from 'lucide-react';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { notificationService } from '../services/notificationService.js';
 
-export const AlarmCard = ({ alarm, onToggle, onEdit, onDelete, onTest }) => {
+export const AlarmCard = ({ alarm, onToggle, onEdit, onDelete, onTest, onToggleAmPm }) => {
   const { t, formatTime } = useSettings();
   const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  const hourNumber = parseInt(String(alarm.time || '00:00').split(':')[0], 10) || 0;
+  const isPM = hourNumber >= 12;
+
+  // Compute friendly countdown to next trigger
+  const countdownText = (() => {
+    if (!alarm.active) return t('Alarm is disabled');
+    const nextDate = notificationService.getNextTriggerDate(alarm);
+    if (!nextDate) return t('No scheduled days');
+    const diffMs = nextDate.getTime() - Date.now();
+    if (diffMs <= 0) return t('Rings in less than a minute');
+    const totalMinutes = Math.round(diffMs / (60 * 1000));
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+    const isToday = nextDate.getDate() === new Date().getDate();
+
+    if (hours === 0) {
+      return `⏰ Rings ${isToday ? 'today' : 'tomorrow'} in ${mins}m`;
+    }
+    return `⏰ Rings ${isToday ? 'today' : 'tomorrow'} in ${hours}h ${mins}m`;
+  })();
 
   return (
     <div className={`relative overflow-hidden rounded-2xl p-5 sm:p-6 transition-all duration-300 border ${
@@ -16,11 +38,37 @@ export const AlarmCard = ({ alarm, onToggle, onEdit, onDelete, onTest }) => {
         
         {/* Left: Time & Information */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex flex-wrap items-center gap-2 mb-1">
             <span className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white font-mono">
               {formatTime(alarm.time)}
             </span>
+
+            {/* Quick 1-Click AM / PM Switcher Button */}
+            {onToggleAmPm && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleAmPm(alarm.id);
+                }}
+                className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs font-extrabold rounded-lg transition-all border shadow-sm ${
+                  isPM
+                    ? 'bg-indigo-600/30 hover:bg-indigo-600/50 text-indigo-300 border-indigo-500/40'
+                    : 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border-amber-500/40'
+                }`}
+                title={`Currently ${isPM ? 'PM (Afternoon/Night)' : 'AM (Early Morning)'}. Click to switch to ${isPM ? 'AM' : 'PM'}`}
+              >
+                {isPM ? <Moon className="w-3 h-3 text-indigo-400" /> : <Sun className="w-3 h-3 text-amber-400" />}
+                <span>{isPM ? 'PM' : 'AM'}</span>
+                <span className="text-[10px] opacity-75 font-normal ml-0.5">⇄ Switch</span>
+              </button>
+            )}
           </div>
+
+          {/* Next Ring Countdown Badge */}
+          <p className="text-xs font-semibold text-amber-300/90 mb-2 flex items-center gap-1.5">
+            <span>{countdownText}</span>
+          </p>
 
           <h3 className="text-base font-semibold text-slate-200 truncate mb-2">
             {alarm.label || t('Alarm')}

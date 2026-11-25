@@ -57,7 +57,12 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
         setSecretNote('');
       }
     } else {
-      setTime('07:00');
+      // Default new alarms to current time + 2 minutes (auto-detecting AM/PM)
+      const now = new Date();
+      const currentH = now.getHours();
+      const targetM = (now.getMinutes() + 2) % 60;
+      const targetH = targetM < now.getMinutes() ? (currentH + 1) % 24 : currentH;
+      setTime(`${String(targetH).padStart(2, '0')}:${String(targetM).padStart(2, '0')}`);
       setLabel('Rise & Conquer');
       setDays(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
       const selectedSound = builtInSounds.find(sound => sound.id === defaultAlarmSound) || builtInSounds[0];
@@ -74,6 +79,43 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
   }, [alarmToEdit, isOpen, defaultAlarmSound]);
 
   if (!isOpen) return null;
+
+  // Compute live countdown to when the currently selected time will ring
+  const getModalCountdown = () => {
+    if (!time) return '';
+    const [hStr, mStr] = time.split(':');
+    const targetH = parseInt(hStr, 10);
+    const targetM = parseInt(mStr, 10);
+    if (isNaN(targetH) || isNaN(targetM)) return '';
+
+    const now = new Date();
+    const candidate = new Date(now);
+    candidate.setHours(targetH, targetM, 0, 0);
+
+    let isToday = true;
+    if (candidate.getTime() <= now.getTime()) {
+      candidate.setDate(candidate.getDate() + 1);
+      isToday = false;
+    }
+
+    const diffMs = candidate.getTime() - now.getTime();
+    const totalMinutes = Math.round(diffMs / 60000);
+    const hours = Math.floor(totalMinutes / 60);
+    const mins = totalMinutes % 60;
+
+    if (hours === 0) {
+      return `Rings ${isToday ? 'today' : 'tomorrow'} in ${mins}m`;
+    }
+    return `Rings ${isToday ? 'today' : 'tomorrow'} in ${hours}h ${mins}m`;
+  };
+
+  const setTimeToNextMinutes = (minsAhead = 2) => {
+    const now = new Date();
+    const currentH = now.getHours();
+    const targetM = (now.getMinutes() + minsAhead) % 60;
+    const targetH = targetM < now.getMinutes() ? (currentH + 1) % 24 : currentH;
+    setTime(`${String(targetH).padStart(2, '0')}:${String(targetM).padStart(2, '0')}`);
+  };
 
   // Convert 24h string ('14:30') to 12h representation
   const parseTime = (timeStr) => {
@@ -384,6 +426,31 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
                   </button>
                 </div>
               </div>
+
+              {/* Prominent Live Helper Banner */}
+              <div className={`my-3 p-3 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-semibold ${
+                parsed.period === 'PM'
+                  ? 'bg-indigo-950/80 border-indigo-500/40 text-indigo-200'
+                  : 'bg-amber-950/60 border-amber-500/40 text-amber-200'
+              }`}>
+                <div className="flex items-center gap-2">
+                  {parsed.period === 'PM' ? <Moon className="w-4 h-4 text-indigo-400" /> : <Sun className="w-4 h-4 text-amber-400" />}
+                  <span>{parsed.period === 'PM' ? '🌙 PM (Afternoon / Evening)' : '☀️ AM (Midnight / Morning)'}</span>
+                </div>
+                <span className="font-mono font-bold text-white bg-black/40 px-2.5 py-1 rounded-md border border-white/10">
+                  {getModalCountdown()}
+                </span>
+              </div>
+
+              {/* Instant 2-Minute Test Button */}
+              <button
+                type="button"
+                onClick={() => setTimeToNextMinutes(2)}
+                className="w-full mb-3 py-2 px-3 rounded-xl bg-gradient-to-r from-amber-500/20 via-indigo-600/20 to-violet-600/20 hover:from-amber-500/30 hover:to-violet-600/30 border border-indigo-500/40 text-slate-200 text-xs font-bold flex items-center justify-center gap-2 transition-all shadow-sm"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                <span>⚡ Set to Ring in 2 Minutes from Now (Instant Test)</span>
+              </button>
 
               {/* Quick Minutes Fine-Tuning */}
               <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-800/80">
