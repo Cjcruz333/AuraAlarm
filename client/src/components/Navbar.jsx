@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { 
   Bell, 
   Moon, 
@@ -70,6 +70,16 @@ export const Navbar = ({
     { id: 'settings', label: t('Settings'), icon: Settings }
   ];
 
+  // Compute free-trial status from user record (trialEndsAt field set at registration)
+  const isTrialActive = (() => {
+    if (!user || user.isPro) return false;
+    const ends = Date.parse(user.trialEndsAt || '');
+    return Number.isFinite(ends) && ends > Date.now();
+  })();
+  const trialDaysLeft = isTrialActive
+    ? Math.max(0, Math.ceil((Date.parse(user.trialEndsAt) - Date.now()) / 86_400_000))
+    : 0;
+
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 pwa-safe-area-top">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -96,11 +106,11 @@ export const Navbar = ({
                   className="text-[10px] sm:text-xs text-slate-400 font-medium truncate"
                   title={user ? `${greeting}, ${displayName}` : formattedTime}
                 >
-                  <span className="hidden sm:inline">{formattedDate} • </span>
+                  <span className="hidden sm:inline">{formattedDate} â€¢ </span>
                   <span className="text-slate-200 font-semibold">
                     {user ? `${greeting}, ${firstName}` : formattedTime}
                   </span>
-                  {user && <span className="hidden sm:inline"> • {formattedTime}</span>}
+                  {user && <span className="hidden sm:inline"> â€¢ {formattedTime}</span>}
                 </p>
               </div>
             </div>
@@ -109,18 +119,32 @@ export const Navbar = ({
           {/* Right Action Icons & Streak */}
           <div className="hidden xl:flex items-center gap-2">
             
-            {/* VIP PRO / Upgrade Membership Button */}
+            {/* VIP PRO / Upgrade Membership / Trial Button */}
             <button
               onClick={onOpenUpgrade}
               className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all duration-200 shadow-md ${
                 user?.isPro
                   ? 'bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-500/25 border border-amber-400 text-amber-300 shadow-amber-500/10'
-                  : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-amber-500/20 hover:scale-105 active:scale-95'
+                  : isTrialActive
+                    ? 'bg-gradient-to-r from-emerald-500/25 to-teal-500/20 border border-emerald-400/60 text-emerald-300 shadow-emerald-500/10'
+                    : 'bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 shadow-amber-500/20 hover:scale-105 active:scale-95'
               }`}
-              title={user?.isPro ? 'Aura Pro VIP Member Active' : 'Upgrade to Aura Pro Membership'}
+              title={
+                user?.isPro
+                  ? 'Aura Pro VIP Member Active'
+                  : isTrialActive
+                    ? `Free Trial Active — ${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''} left`
+                    : 'Upgrade to Aura Pro Membership'
+              }
             >
-              <Crown className={`w-3.5 h-3.5 ${user?.isPro ? 'text-amber-400 fill-amber-400' : 'fill-slate-950'}`} />
-              <span>{user?.isPro ? (user.proBadge || 'PRO VIP') : 'Upgrade PRO'}</span>
+              <Crown className={`w-3.5 h-3.5 ${user?.isPro ? 'text-amber-400 fill-amber-400' : isTrialActive ? 'text-emerald-400' : 'fill-slate-950'}`} />
+              <span>
+                {user?.isPro
+                  ? (user.proBadge || 'PRO VIP')
+                  : isTrialActive
+                    ? `Trial · ${trialDaysLeft}d left`
+                    : 'Upgrade PRO'}
+              </span>
             </button>
 
             {/* Gamification Streak Pill */}
@@ -219,11 +243,23 @@ export const Navbar = ({
           <div className="relative flex xl:hidden items-center gap-2 shrink-0">
             <button
               onClick={onOpenUpgrade}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 text-xs font-extrabold shadow-md shadow-amber-500/20"
-              title={user?.isPro ? 'Membership' : 'View subscription plans'}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-extrabold shadow-md ${
+                user?.isPro
+                  ? 'bg-gradient-to-r from-amber-500/25 via-yellow-500/20 to-amber-500/25 border border-amber-400 text-amber-300'
+                  : isTrialActive
+                    ? 'bg-gradient-to-r from-emerald-500/25 to-teal-500/20 border border-emerald-400/60 text-emerald-300'
+                    : 'bg-gradient-to-r from-amber-500 to-yellow-500 text-slate-950 shadow-amber-500/20'
+              }`}
+              title={
+                user?.isPro
+                  ? 'Membership'
+                  : isTrialActive
+                    ? `Trial · ${trialDaysLeft}d left`
+                    : 'View subscription plans'
+              }
             >
-              <Crown className="w-3.5 h-3.5 fill-slate-950" />
-              <span>{user?.isPro ? (user.proBadge || 'PRO') : 'Upgrade'}</span>
+              <Crown className={`w-3.5 h-3.5 ${user?.isPro ? 'text-amber-400 fill-amber-400' : isTrialActive ? 'text-emerald-400' : 'fill-slate-950'}`} />
+              <span>{user?.isPro ? (user.proBadge || 'PRO') : isTrialActive ? `${trialDaysLeft}d Trial` : 'Upgrade'}</span>
             </button>
             <button
               onClick={() => setIsMobileMenuOpen(open => !open)}
@@ -330,3 +366,6 @@ export const Navbar = ({
     </header>
   );
 };
+
+
+

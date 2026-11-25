@@ -4,7 +4,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { db, UPLOADS_DIR } from '../db.js';
-import { adminMiddleware, authMiddleware, isSubscriptionActive } from '../middleware/auth.js';
+import { adminMiddleware, authMiddleware, isSubscriptionActive, isFreeTrialActive } from '../middleware/auth.js';
 import { syncReferralRewards } from '../services/referrals.js';
 
 const router = express.Router();
@@ -159,6 +159,12 @@ router.get('/my-status', authMiddleware, (req, res) => {
     const transactions = db.find('transactions', t => t.userId === req.user.id) || [];
     const pendingProof = transactions.find(t => t.status === 'pending_verification');
 
+    const trialActive = isFreeTrialActive(user);
+    const trialEndsAt = user.trialEndsAt || null;
+    const trialDaysLeft = trialActive && trialEndsAt
+      ? Math.max(0, Math.ceil((Date.parse(trialEndsAt) - Date.now()) / 86_400_000))
+      : 0;
+
     res.json({
       success: true,
       isPro: isSubscriptionActive(user),
@@ -168,10 +174,14 @@ router.get('/my-status', authMiddleware, (req, res) => {
       proSubscribedAt: user.proSubscribedAt || null,
       proExpiresAt: user.proExpiresAt || null,
       subscriptionStatus: isSubscriptionActive(user)
-        ? 'active'
+        ? (trialActive && !user.isPro ? 'trial' : 'active')
         : user.proExpiresAt && Date.parse(user.proExpiresAt) <= Date.now()
           ? 'expired'
           : user.subscriptionStatus || 'none',
+      isFreeTrialActive: trialActive,
+      trialStartedAt: user.trialStartedAt || null,
+      trialEndsAt,
+      trialDaysLeft,
       pendingProof: pendingProof || null,
       transactions
     });

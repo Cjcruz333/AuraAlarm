@@ -126,7 +126,7 @@ flowchart TD
 - npm v9+
 
 ### Subscription Access & Payment Configuration
-Visitors can explore the app in a read-only preview before subscribing. The preview uses sample data; account data and protected API features require an account with an active subscription. New accounts and submitted bank-transfer proofs do not get paid access until payment is verified. The server checks subscription status for protected API requests.
+Signing in or creating an account is required to access the app. Signed-in users without an active subscription can explore a read-only preview that uses sample data; account data and protected API features still require an active subscription. New accounts and submitted bank-transfer proofs do not get paid access until payment is verified. The server checks subscription status for protected API requests.
 
 Before deploying, configure these environment variables:
 - `DATABASE_URL`: PostgreSQL connection string. Required in production; leave unset locally to use `server/data/database.json`.
@@ -181,6 +181,11 @@ For a no-card database option, create a [Neon](https://neon.com/) free project a
 The current PostgreSQL adapter stores the app's collections in one JSONB state row and is intended for a single-instance preview, not a scaled production service. Render free services sleep when idle and have an ephemeral filesystem. Uploaded photos, sounds, and receipts therefore are not persistent yet; object storage must be added before relying on uploaded files.
 
 To deploy, create a private Git repository after checking that `.env` files, `server/data/`, and `server/uploads/` are excluded. In [Render](https://render.com), create a Blueprint from that repository and provide `DATABASE_URL` and a newly generated `JWT_SECRET` when prompted. The service builds `client/dist` and serves the API and frontend from the same HTTPS URL.
+
+### Website and app analytics
+AuraAlarm uses the `AuraAlarm` Google Analytics 4 property and its `AuraAlarm Website` web stream. In [Google Analytics](https://analytics.google.com/), use **Reports → Realtime** to see current visitors and **Reports → Engagement → Events** to review `page_view`, `app_section_view`, `sign_up`, and `alarm_created`. Page views include unauthenticated visits to the sign-in screen.
+
+The production tag sends sanitized page locations (without query strings or hashes) and does not enable enhanced measurement. Do not send email addresses, account identifiers, reset tokens, or other personal data to Analytics. Analytics is enabled immediately; disclose this in the app's privacy notice and obtain consent where required.
 
 ### Install on a Phone
 Use the browser's **Install app** or **Add to Home Screen** option on the deployed HTTPS website. Direct APK downloads are disabled until a signed, verified Android release is available; this avoids asking visitors to install an unsigned or unverified package.

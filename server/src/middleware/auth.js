@@ -53,7 +53,18 @@ export const optionalAuthMiddleware = (req, res, next) => {
   next();
 };
 
+// Returns true when the user is within their 7-day free trial window
+export const isFreeTrialActive = (user, now = Date.now()) => {
+  if (!user || user.username === 'demo') return false;
+  if (user.isPro && user.subscriptionStatus === 'active') return false; // already paid
+  const trialEndsAt = Date.parse(user.trialEndsAt || '');
+  return Number.isFinite(trialEndsAt) && trialEndsAt > now;
+};
+
 export const isSubscriptionActive = (user, now = Date.now()) => {
+  // A user inside their free trial counts as active (Pro-equivalent)
+  if (isFreeTrialActive(user, now)) return true;
+
   if (!user?.isPro || user.username === 'demo' || user.subscriptionStatus !== 'active') {
     return false;
   }
@@ -74,10 +85,15 @@ export const subscriberMiddleware = (req, res, next) => {
     }
 
     if (!isSubscriptionActive(user)) {
+      // Check if the trial just expired to give a helpful message
+      const trialExpired = user.trialEndsAt && Date.parse(user.trialEndsAt) <= Date.now();
       return res.status(403).json({
-        error: 'An active subscription is required to access this feature',
+        error: trialExpired
+          ? 'Your 7-day free trial has ended. Subscribe to a Pro plan to continue enjoying premium features.'
+          : 'An active subscription is required to access this feature',
         code: 'SUBSCRIPTION_REQUIRED',
-        subscriptionStatus: user.subscriptionStatus || 'none'
+        subscriptionStatus: user.subscriptionStatus || 'none',
+        trialExpired: !!trialExpired
       });
     }
 

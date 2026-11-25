@@ -155,6 +155,10 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Referral code not found. Check the invite link and try again.' });
     }
 
+    const now = new Date();
+    const trialEndsAt = new Date(now);
+    trialEndsAt.setDate(trialEndsAt.getDate() + 7);
+
     const newUser = {
       id: uuidv4(),
       username,
@@ -176,7 +180,9 @@ router.post('/register', async (req, res) => {
       streak: 1,
       bestStreak: 1,
       totalWakes: 1,
-      createdAt: new Date().toISOString(),
+      createdAt: now.toISOString(),
+      trialStartedAt: now.toISOString(),
+      trialEndsAt: trialEndsAt.toISOString(),
       referralCode: createUniqueReferralCode(),
       referredBy: referrer?.id || null,
       referredAt: referrer ? new Date().toISOString() : null

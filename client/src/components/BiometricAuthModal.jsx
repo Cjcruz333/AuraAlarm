@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { X, Fingerprint, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../services/api.js';
+import { trackSignUp } from '../services/analytics.js';
 import confetti from 'canvas-confetti';
 
-export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', resetToken = '', onResetComplete }) => {
+export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', resetToken = '', onResetComplete, canClose = true }) => {
   const { user, loginBiometric, enrollBiometrics, login, register, logout } = useAuth();
   const [tab, setTab] = useState(initialTab);
   const [username, setUsername] = useState('');
@@ -19,8 +20,8 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (isOpen) setTab(initialTab);
-  }, [initialTab, isOpen]);
+    if (isOpen) setTab(user && !resetToken ? 'biometric' : initialTab);
+  }, [initialTab, isOpen, resetToken, user]);
 
   if (!isOpen) return null;
 
@@ -80,6 +81,7 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
     setIsProcessing(true);
     try {
       await register({ username, email, password, referralCode });
+      trackSignUp();
       onClose();
     } catch (err) {
       alert(err.message || 'Registration failed');
@@ -147,16 +149,35 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
           <div className="flex items-center gap-2">
             <Fingerprint className="w-5 h-5 text-indigo-400" />
             <h3 className="text-lg font-bold text-white">
-              {tab === 'forgot' ? 'Forgot Password' : tab === 'reset' ? 'Choose a New Password' : 'Biometric Security & Passkeys'}
+              {tab === 'forgot'
+                ? 'Forgot Password'
+                : tab === 'reset'
+                  ? 'Choose a New Password'
+                  : tab === 'login'
+                    ? 'Sign In to AuraAlarm'
+                    : tab === 'register'
+                      ? 'Create Your Account'
+                      : 'Biometric Security & Passkeys'}
             </h3>
           </div>
-          <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
-            <X className="w-5 h-5" />
-          </button>
+          {canClose && (
+            <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+              <X className="w-5 h-5" />
+            </button>
+          )}
         </div>
 
+        {!canClose && (
+          <section className="mb-5">
+            <h1 className="text-xl font-extrabold text-white">AuraAlarm Smart Alarm Clock</h1>
+            <p className="mt-2 text-sm text-slate-400">
+              AuraAlarm, also known as Aura Alarm, is a web alarm clock with customizable alarms, a world clock, sleep sounds, and wellness tools. Sign in or create an account to get started.
+            </p>
+          </section>
+        )}
+
         {/* Tab Switcher */}
-        {!['forgot', 'reset'].includes(tab) && <div className="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
+        {!user && !['forgot', 'reset'].includes(tab) && <div className="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
           <button
             onClick={() => setTab('biometric')}
             className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${

@@ -19,6 +19,7 @@ import {
 import { useAuth } from './context/AuthContext.jsx';
 import { useAlarm } from './context/AlarmContext.jsx';
 import { api } from './services/api.js';
+import { trackAlarmCreated, trackAppSection, trackPageView } from './services/analytics.js';
 
 // Components
 import { Navbar } from './components/Navbar.jsx';
@@ -88,6 +89,14 @@ export default function App() {
   const [authModalTab, setAuthModalTab] = useState(() => resetToken ? 'reset' : 'login');
 
   useEffect(() => {
+    if (user) {
+      trackAppSection(activeTab);
+    } else {
+      trackPageView('AuraAlarm | Sign In');
+    }
+  }, [activeTab, user]);
+
+  useEffect(() => {
     const handlePasswordResetLink = () => {
       const token = getPasswordResetTokenFromHash();
       if (!token) return;
@@ -130,7 +139,7 @@ export default function App() {
   }, [shouldCheckReferralReminder, user?.id, user?.proExpiresAt]);
 
   const openAuth = (tab = 'login') => {
-    setAuthModalTab(tab);
+    setAuthModalTab(user ? 'biometric' : tab);
     setIsBiometricModalOpen(true);
   };
 
@@ -201,6 +210,7 @@ export default function App() {
         await api.updateAlarm(alarmData.id, alarmData);
       } else {
         await api.createAlarm(alarmData);
+        trackAlarmCreated();
       }
       loadAlarms();
     } catch (err) {
@@ -243,6 +253,21 @@ export default function App() {
     );
   }
 
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#0a0d14] text-slate-100 font-sans">
+        <BiometricAuthModal
+          isOpen
+          canClose={false}
+          onClose={() => setIsBiometricModalOpen(false)}
+          initialTab={resetToken ? 'reset' : 'login'}
+          resetToken={resetToken}
+          onResetComplete={handlePasswordResetComplete}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#0a0d14] text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
       
@@ -250,7 +275,7 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenBiometrics={() => setIsBiometricModalOpen(true)}
+        onOpenBiometrics={() => openAuth(user ? 'biometric' : 'login')}
         onOpenFeedback={() => setIsFeedbackModalOpen(true)}
         onOpenCalendar={() => setIsCalendarModalOpen(true)}
         onOpenShare={handleOpenStreakShare}

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, Clock3, Globe2, Settings2, Volume2 } from 'lucide-react';
+import { Bell, Clock3, Globe2, LogOut, Settings2, Volume2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { SUPPORTED_LANGUAGES } from '../i18n.js';
 
@@ -21,6 +22,7 @@ const SettingCard = ({ icon: Icon, title, children }) => (
 const selectClassName = 'w-full rounded-xl border border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500';
 
 export const SettingsPage = () => {
+  const { user, logout } = useAuth();
   const {
     t,
     language,
@@ -68,6 +70,23 @@ export const SettingsPage = () => {
         <h1 className="text-2xl font-black text-white sm:text-3xl">{t('Settings & Preferences')}</h1>
         <p className="mt-2 text-sm text-slate-300">{t('Choose your language and alarm defaults.')}</p>
       </header>
+
+      <SettingCard icon={LogOut} title={t('Account')}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs text-slate-400">{t('Signed in as')}</p>
+            <p className="mt-1 text-sm font-semibold text-white">{user?.username || user?.email || 'AuraAlarm account'}</p>
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2.5 text-sm font-bold text-rose-200 hover:bg-rose-500/20"
+          >
+            <LogOut className="h-4 w-4" />
+            {t('Sign Out')}
+          </button>
+        </div>
+      </SettingCard>
 
       <SettingCard icon={Globe2} title={t('Language')}>
         <label htmlFor="app-language" className="mb-2 block text-xs font-semibold text-slate-300">{t('Language')}</label>
