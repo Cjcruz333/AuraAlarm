@@ -139,7 +139,8 @@ self.addEventListener('message', (event) => {
               badge: '/icons/icon-192.png',
               tag: `aura-alarm-${alarm.id}`,
               renotify: true,
-              vibrate: [500, 200, 500, 200, 800],
+              sound: '/alarm_chime.wav',
+              vibrate: [800, 300, 800, 300, 1200, 500, 800, 300, 1200],
               data: {
                 url: `/?ringingAlarmId=${alarm.id}`,
                 alarmId: alarm.id

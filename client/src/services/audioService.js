@@ -424,6 +424,36 @@ class AudioEngine {
     }
   }
 
+  // Switch keep-alive to audible ringing chime so background audio session sounds loudly
+  triggerBackgroundAudibleChime() {
+    if (typeof window === 'undefined') return;
+    try {
+      if (this.keepAlivePlayer) {
+        this.keepAlivePlayer.pause();
+        this.keepAlivePlayer.src = '/alarm_chime.wav';
+        this.keepAlivePlayer.loop = true;
+        this.keepAlivePlayer.volume = 1.0;
+        this.keepAlivePlayer.play().catch(() => {});
+        if ('mediaSession' in navigator) {
+          navigator.mediaSession.metadata = new MediaMetadata({
+            title: '⏰ Alarm Ringing!',
+            artist: 'Tap to open AuraAlarm',
+            album: 'AuraAlarm Smart Clock'
+          });
+          navigator.mediaSession.playbackState = 'playing';
+        }
+      } else {
+        const audio = new Audio('/alarm_chime.wav');
+        audio.loop = true;
+        audio.volume = 1.0;
+        audio.play().catch(() => {});
+        this.keepAlivePlayer = audio;
+      }
+    } catch (e) {
+      console.warn('triggerBackgroundAudibleChime error:', e);
+    }
+  }
+
   stopKeepAlive() {
     if (this.keepAlivePlayer) {
       try {

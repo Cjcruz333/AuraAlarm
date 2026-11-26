@@ -254,7 +254,8 @@ export const AlarmProvider = ({ children }) => {
   // Trigger Alarm
   const triggerAlarm = (alarm) => {
     setRingingAlarm(alarm);
-    // 1. Play sound
+    // 1. Play sound & transition background audio session to audible chime
+    audioEngine.triggerBackgroundAudibleChime();
     audioEngine.playAlarmSound(alarm.soundId || 'gentle_chimes', api.resolveAssetUrl(alarm.customSoundUrl));
 
     // 2. Ring/vibrate & show system notification on phone
