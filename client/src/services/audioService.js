@@ -395,6 +395,29 @@ class AudioEngine {
       }
       this.customAudioPlayer = null;
     }
+    // Stop the audible alarm sound on keepAlivePlayer immediately
+    if (this.keepAlivePlayer) {
+      try {
+        this.keepAlivePlayer.pause();
+        this.keepAlivePlayer.currentTime = 0;
+      } catch (e) {
+        // ignore
+      }
+    }
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      try {
+        navigator.vibrate(0);
+      } catch (e) {
+        // ignore
+      }
+    }
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.playbackState = 'none';
+      } catch (e) {
+        // ignore
+      }
+    }
   }
 
   // --- BACKGROUND KEEP-ALIVE (iOS PWA & Web Background Timer) ---
