@@ -280,6 +280,10 @@ class NotificationService {
         // 1. Direct Web timer for foreground / active audio session
         const alarmTimer = setTimeout(() => {
           this.showAlarmNotification(alarm);
+          // Play loud audible chime immediately when alarm notification fires
+          if (typeof window !== 'undefined' && window.audioEngine) {
+            window.audioEngine.triggerBackgroundAudibleChime();
+          }
         }, delayMs);
         this.webTimers.push(alarmTimer);
 
@@ -328,6 +332,11 @@ class NotificationService {
       } catch {
         // ignore vibration errors
       }
+    }
+
+    // Immediately trigger loud audible chime on phone if background audio session exists
+    if (typeof window !== 'undefined' && window.audioEngine) {
+      window.audioEngine.triggerBackgroundAudibleChime();
     }
 
     const permission = await this.getPermissionStatus();
