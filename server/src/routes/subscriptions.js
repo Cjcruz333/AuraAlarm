@@ -6,6 +6,7 @@ import fs from 'fs';
 import { db, UPLOADS_DIR } from '../db.js';
 import { adminMiddleware, authMiddleware, isSubscriptionActive, isFreeTrialActive } from '../middleware/auth.js';
 import { syncReferralRewards } from '../services/referrals.js';
+import { sendPaymentConfirmationEmail } from '../services/mailer.js';
 
 const router = express.Router();
 
@@ -157,6 +158,7 @@ router.get('/my-status', authMiddleware, (req, res) => {
     }
 
     const transactions = db.find('transactions', t => t.userId === req.user.id) || [];
+    const payments = db.find('payments', p => p.userId === req.user.id) || [];
     const pendingProof = transactions.find(t => t.status === 'pending_verification');
 
     const trialActive = isFreeTrialActive(user);
@@ -183,7 +185,8 @@ router.get('/my-status', authMiddleware, (req, res) => {
       trialEndsAt,
       trialDaysLeft,
       pendingProof: pendingProof || null,
-      transactions
+      transactions,
+      payments
     });
   } catch (err) {
     console.error('Fetch subscription status error:', err);
@@ -262,7 +265,7 @@ router.post('/submit-proof', authMiddleware, async (req, res) => {
       amount,
       currency,
       paymentMethod: 'fidelity_bank_transfer',
-      settlementAccount: '3004543080 Fidelity Bank (OKEKE CHIEMERIA JOHN)',
+      settlementAccount: 'Fidelity Bank (OKEKE CHIEMERIA JOHN)',
       senderName: senderName.trim(),
       senderBank: senderBank.trim(),
       transactionReference: transactionReference.trim(),
@@ -272,8 +275,58 @@ router.post('/submit-proof', authMiddleware, async (req, res) => {
       createdAt: now
     };
 
-    // Save proof to transactions
+    const paymentRecord = {
+      id: proofId,
+      userId: user.id,
+      userName: user.name || user.username,
+      userEmail: user.email,
+      plan: plan.name,
+      planId: plan.id,
+      amount,
+      currency,
+      dateSubmitted: now,
+      proofReference: transactionReference.trim(),
+      receiptUrl: receiptUrl || null,
+      senderName: senderName.trim(),
+      senderBank: senderBank.trim(),
+      status: 'pending',
+      confirmedBy: null,
+      dateConfirmed: null,
+      rejectionReason: null,
+      notes: notes.trim(),
+      createdAt: now
+    };
+
+    // Save proof to payments and transactions
+    await db.insert('payments', paymentRecord);
     await db.insert('transactions', proofRecord);
+
+    if (db.pool) {
+      try {
+        await db.pool.query(
+          `INSERT INTO payments (id, user_id, plan, amount, currency, date_submitted, proof_reference, receipt_url, sender_name, sender_bank, status, notes, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+           ON CONFLICT (id) DO NOTHING`,
+          [
+            paymentRecord.id,
+            paymentRecord.userId,
+            paymentRecord.plan,
+            paymentRecord.amount,
+            paymentRecord.currency,
+            paymentRecord.dateSubmitted,
+            paymentRecord.proofReference,
+            paymentRecord.receiptUrl,
+            paymentRecord.senderName,
+            paymentRecord.senderBank,
+            'pending',
+            paymentRecord.notes,
+            paymentRecord.createdAt
+          ]
+        );
+      } catch (pgErr) {
+        console.error('Postgres payments insert error:', pgErr);
+      }
+    }
 
     // Update user record with pending verification status (isPro REMAINS FALSE)
     const alreadyActive = isSubscriptionActive(user);
@@ -291,8 +344,9 @@ router.post('/submit-proof', authMiddleware, async (req, res) => {
       success: true,
       status: 'pending_verification',
       proof: proofRecord,
+      payment: paymentRecord,
       user: safeUser,
-      message: '✅ Proof of payment submitted successfully! Your payment is currently being matched against Fidelity Bank account 3004543080. Once Okeke Chiemeria John confirms receipt of funds, your Pro VIP account will be activated.'
+      message: 'Payment proof received. We will confirm within 24 hours.'
     });
   } catch (err) {
     console.error('Submit payment proof error:', err);
@@ -473,16 +527,53 @@ router.post('/admin/approve', adminMiddleware, async (req, res) => {
       pendingReference: null
     });
 
-    // 2. Mark transaction as approved
+    const confirmedBy = 'Okeke Chiemeria John (Admin)';
+    const dateConfirmed = now.toISOString();
+
+    // 2. Mark transaction and payment as approved / confirmed
     await db.update('transactions', t => t.id === proof.id, {
       status: 'approved',
-      approvedBy: 'Authorized admin after manual bank-credit verification',
-      verifiedAt: now.toISOString()
+      approvedBy: confirmedBy,
+      verifiedAt: dateConfirmed
     });
+
+    await db.update('payments', p => p.id === proof.id || p.proofReference === proof.transactionReference, {
+      status: 'confirmed',
+      confirmedBy,
+      dateConfirmed
+    });
+
+    if (db.pool) {
+      try {
+        await db.pool.query(
+          `UPDATE payments SET status = 'confirmed', confirmed_by = $1, date_confirmed = $2 WHERE id = $3`,
+          [confirmedBy, dateConfirmed, proof.id]
+        );
+      } catch (pgErr) {
+        console.error('Postgres payments confirm update error:', pgErr);
+      }
+    }
+
     if (updatedUser.referredBy) await syncReferralRewards(updatedUser.referredBy);
+
+    // Send confirmation email if SMTP is configured
+    let emailResult = { sent: false };
+    try {
+      emailResult = await sendPaymentConfirmationEmail({
+        userEmail: targetUser.email,
+        userName: targetUser.name || targetUser.username,
+        planName: plan.name,
+        amount: proof.amount,
+        currency: proof.currency,
+        expiresAt
+      });
+    } catch (emailErr) {
+      console.warn('Confirmation email notice:', emailErr);
+    }
 
     res.json({
       success: true,
+      emailSent: !!emailResult?.sent,
       message: `🎉 Payment verified! User ${targetUser.name || targetUser.username} has been upgraded to ${plan.name}.`,
       user: updatedUser
     });
@@ -496,7 +587,7 @@ router.post('/admin/approve', adminMiddleware, async (req, res) => {
 // John marks payment proof as rejected (e.g. fake transfer or funds not seen)
 router.post('/admin/reject', adminMiddleware, async (req, res) => {
   try {
-    const { proofId, reason = 'Payment was not found in Fidelity Bank account 3004543080' } = req.body;
+    const { proofId, reason = 'Payment could not be confirmed in bank records' } = req.body;
     if (!proofId) {
       return res.status(400).json({ error: 'Proof ID is required' });
     }
@@ -511,15 +602,34 @@ router.post('/admin/reject', adminMiddleware, async (req, res) => {
 
     const rejectionReason = typeof reason === 'string' && reason.trim()
       ? reason.trim()
-      : 'Payment was not confirmed in Fidelity Bank account 3004543080';
+      : 'Payment could not be confirmed in bank records';
     const now = new Date().toISOString();
+    const confirmedBy = 'Okeke Chiemeria John (Admin)';
 
     await db.update('transactions', t => t.id === proof.id, {
       status: 'rejected',
       rejectionReason,
-      rejectedBy: 'Authorized admin after manual bank-credit review',
+      rejectedBy: confirmedBy,
       rejectedAt: now
     });
+
+    await db.update('payments', p => p.id === proof.id || p.proofReference === proof.transactionReference, {
+      status: 'rejected',
+      rejectionReason,
+      confirmedBy,
+      dateConfirmed: now
+    });
+
+    if (db.pool) {
+      try {
+        await db.pool.query(
+          `UPDATE payments SET status = 'rejected', rejection_reason = $1, confirmed_by = $2, date_confirmed = $3 WHERE id = $4`,
+          [rejectionReason, confirmedBy, now, proof.id]
+        );
+      } catch (pgErr) {
+        console.error('Postgres payments reject update error:', pgErr);
+      }
+    }
 
     if (proof.userId) {
       const targetUser = db.findOne('users', u => u.id === proof.userId);
@@ -573,7 +683,7 @@ router.post('/verify-nip', (req, res) => {
     riskScore,
     reason: !isValidFormat 
       ? `Suspected Fake Transfer: Real NIBSS bank transfers have a 30-digit numeric session ID. Provided value is ${clean.length} characters.`
-      : 'Session ID follows standard NIBSS format. Verify credit alert in Fidelity Bank account 3004543080 before approval.'
+      : 'Session ID follows standard NIBSS format. Verify credit alert in your bank account before approval.'
   });
 });
 
@@ -603,6 +713,122 @@ router.post('/admin/reset-user', adminMiddleware, async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/subscriptions/admin/payments
+// Protected admin endpoint to list all payments with filtering
+router.get('/admin/payments', adminMiddleware, (req, res) => {
+  try {
+    const { status, search } = req.query;
+    let list = db.find('payments', () => true) || [];
+
+    if (list.length === 0) {
+      db.migratePayments(db.data);
+      list = db.find('payments', () => true) || [];
+    }
+
+    if (status && status !== 'all') {
+      list = list.filter(p => p.status === status);
+    }
+
+    if (search) {
+      const q = String(search).toLowerCase();
+      list = list.filter(p =>
+        (p.userName && p.userName.toLowerCase().includes(q)) ||
+        (p.userEmail && p.userEmail.toLowerCase().includes(q)) ||
+        (p.proofReference && p.proofReference.toLowerCase().includes(q)) ||
+        (p.senderBank && p.senderBank.toLowerCase().includes(q)) ||
+        (p.senderName && p.senderName.toLowerCase().includes(q)) ||
+        (p.plan && p.plan.toLowerCase().includes(q))
+      );
+    }
+
+    list.sort((a, b) => {
+      if (a.status === 'pending' && b.status !== 'pending') return -1;
+      if (b.status === 'pending' && a.status !== 'pending') return 1;
+      return new Date(b.dateSubmitted || b.createdAt || 0) - new Date(a.dateSubmitted || a.createdAt || 0);
+    });
+
+    res.json({
+      success: true,
+      payments: list,
+      totalCount: list.length,
+      pendingCount: list.filter(p => p.status === 'pending').length,
+      confirmedCount: list.filter(p => p.status === 'confirmed').length,
+      rejectedCount: list.filter(p => p.status === 'rejected').length
+    });
+  } catch (err) {
+    console.error('Admin fetch payments error:', err);
+    res.status(500).json({ error: 'Failed to retrieve payment records' });
+  }
+});
+
+// GET /api/subscriptions/admin/payments/csv
+// Protected admin endpoint to download all payment records as CSV for tax/accounting
+router.get('/admin/payments/csv', adminMiddleware, (req, res) => {
+  try {
+    let list = db.find('payments', () => true) || [];
+    if (list.length === 0) {
+      db.migratePayments(db.data);
+      list = db.find('payments', () => true) || [];
+    }
+
+    list.sort((a, b) => new Date(b.dateSubmitted || 0) - new Date(a.dateSubmitted || 0));
+
+    const escapeCsv = (val) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    const headers = [
+      'Payment ID',
+      'User ID',
+      'User Name',
+      'User Email',
+      'Plan',
+      'Amount',
+      'Currency',
+      'Date Submitted',
+      'Proof Reference',
+      'Sender Name',
+      'Sender Bank',
+      'Status',
+      'Confirmed By',
+      'Date Confirmed',
+      'Rejection Reason'
+    ];
+
+    const rows = list.map(p => [
+      escapeCsv(p.id),
+      escapeCsv(p.userId),
+      escapeCsv(p.userName),
+      escapeCsv(p.userEmail),
+      escapeCsv(p.plan),
+      escapeCsv(p.amount),
+      escapeCsv(p.currency),
+      escapeCsv(p.dateSubmitted),
+      escapeCsv(p.proofReference),
+      escapeCsv(p.senderName),
+      escapeCsv(p.senderBank),
+      escapeCsv(p.status),
+      escapeCsv(p.confirmedBy),
+      escapeCsv(p.dateConfirmed),
+      escapeCsv(p.rejectionReason)
+    ].join(','));
+
+    const csvContent = [headers.join(','), ...rows].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="AuraAlarm-Payment-Records-${new Date().toISOString().split('T')[0]}.csv"`
+    );
+    res.status(200).send(csvContent);
+  } catch (err) {
+    console.error('CSV export error:', err);
+    res.status(500).json({ error: 'Failed to export payment records CSV' });
   }
 });
 

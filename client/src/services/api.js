@@ -347,6 +347,33 @@ class ApiService {
     return await this.request('/subscriptions/admin/proofs');
   }
 
+  async getAdminPayments(params = {}) {
+    const query = new URLSearchParams();
+    if (params.status) query.set('status', params.status);
+    if (params.search) query.set('search', params.search);
+    const qs = query.toString();
+    return await this.request(`/subscriptions/admin/payments${qs ? `?${qs}` : ''}`);
+  }
+
+  async downloadAdminPaymentsCsv() {
+    const response = await fetch(`${BASE_URL}/subscriptions/admin/payments/csv`, {
+      method: 'GET',
+      headers: this.getHeaders()
+    });
+    if (!response.ok) {
+      throw new Error('Failed to download CSV');
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `AuraAlarm-Payment-Records-${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  }
+
   async adminApproveProof(proofId) {
     return await this.request('/subscriptions/admin/approve', {
       method: 'POST',

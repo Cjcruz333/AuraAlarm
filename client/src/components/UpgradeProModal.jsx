@@ -104,6 +104,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
   // Loading & error
   const [isProcessing, setIsProcessing] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [agreedToPaymentRules, setAgreedToPaymentRules] = useState(false);
 
   const copyText = async (value, setCopied) => {
     setCopied(false);
@@ -299,6 +300,10 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
       setErrorMsg('Please enter the Bank Transaction Reference / Session ID from your receipt.');
       return;
     }
+    if (!agreedToPaymentRules) {
+      setErrorMsg('Please confirm that you have read the Terms and Privacy Policy.');
+      return;
+    }
 
     setIsProcessing(true);
 
@@ -416,13 +421,13 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
             <div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40 mb-2">
                 <Clock className="w-3.5 h-3.5" />
-                Proof Submitted • Awaiting Bank Verification
+                Status: Pending
               </span>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
-                Payment Verification in Progress
+                Payment proof received
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto mt-2">
-                Your payment proof has been submitted to <strong>Okeke Chiemeria John</strong>. We are matching your reference against our Fidelity Bank account records.
+                Payment proof received. We will confirm within 24 hours.
               </p>
             </div>
 
@@ -450,7 +455,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">Settlement Account</span>
-                  <span className="text-slate-300">Fidelity Bank (3004543080)</span>
+                  <span className="text-slate-300">Fidelity Bank (OKEKE CHIEMERIA JOHN)</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block text-[10px] uppercase font-bold">Submitted Date</span>
@@ -510,6 +515,25 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                 Unlock 528Hz sleep frequencies, couples companion pings, and worldwide circadian alarms.
               </p>
             </div>
+
+            {/* Rejected Payment Alert Banner */}
+            {user?.subscriptionStatus === 'rejected' && (
+              <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/40 flex items-start gap-3 text-left">
+                <AlertCircle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                <div className="text-xs space-y-1">
+                  <p className="font-bold text-rose-300">Previous Payment Proof Not Confirmed</p>
+                  <p className="text-slate-300">
+                    Reason: {user.rejectionReason || 'The transfer could not be confirmed in bank records.'}
+                  </p>
+                  <p className="text-slate-400">
+                    Need help? Contact support at{' '}
+                    <a href="mailto:okeke12347@gmail.com" className="text-rose-300 underline hover:text-rose-200">
+                      okeke12347@gmail.com
+                    </a>.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* 7-Day Free Trial Banner */}
             {isTrialActive && trialDaysLeft !== null && (
@@ -681,8 +705,42 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
               {/* TAB 1: DIRECT FIDELITY BANK TRANSFER & PROOF SUBMISSION */}
               {paymentTab === 'bank' && (
                 <div className="space-y-4 pt-1">
+
+                  {/* 3. SAY WHAT THEY GET: Plan Summary Box */}
+                  <div className="p-4 rounded-2xl bg-indigo-950/30 border border-indigo-500/30 text-xs space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-indigo-500/20 pb-2">
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300 block">Selected Plan Summary</span>
+                        <h4 className="text-sm font-extrabold text-white">{currentPlan.name}</h4>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-base font-black text-amber-400">{displayPrice}</span>
+                        <span className="block text-[10px] text-slate-400">
+                          Duration: {currentPlan.period === 'one-time' ? 'Lifetime Access' : '1 Month (30 days)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    <ul className="space-y-1 text-[11px] text-slate-300">
+                      {currentPlan.features.slice(0, 4).map((feat, i) => (
+                        <li key={i} className="flex items-start gap-1.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="pt-2 border-t border-indigo-500/20 space-y-1 text-[11px]">
+                      <p className="text-amber-300 font-semibold">
+                        ⏱️ Manual payment: your plan is activated within 24 hours after we confirm your transfer.
+                      </p>
+                      <p className="text-slate-400">
+                        💳 One-time payment — there is no automatic billing or recurring charges.
+                      </p>
+                    </div>
+                  </div>
                   
-                  {/* Bank Account Details Card */}
+                  {/* 1. WHO YOU ARE PAYING & Bank Account Details Card */}
                   <div className="p-4 rounded-2xl bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950/40 border border-amber-500/30 text-xs space-y-3.5 shadow-lg">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                       <span className="text-xs text-amber-300 font-extrabold flex items-center gap-1.5">
@@ -731,6 +789,22 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                         {copyError}
                       </p>
                     )}
+
+                    {/* Who you are paying trust block */}
+                    <div className="p-3 rounded-xl bg-slate-900/70 border border-slate-800/80 space-y-1 text-[11px] text-slate-300">
+                      <p className="font-semibold text-white">Who You Are Paying</p>
+                      <p>Built and run by <strong>Okeke Chiemeria John</strong>, Nigeria.</p>
+                      <p>
+                        Support email:{' '}
+                        <a href="mailto:okeke12347@gmail.com" className="text-amber-400 underline hover:text-amber-300">
+                          okeke12347@gmail.com
+                        </a>
+                        {' '}•{' '}
+                        <a href="/about.html" target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline hover:text-indigo-300">
+                          About AuraAlarm
+                        </a>
+                      </p>
+                    </div>
 
                     {/* USSD Quick Dial */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between text-[11px] text-slate-400 pt-1 gap-1">
@@ -1108,12 +1182,44 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                 </p>
               )}
 
+              {/* 2. LINK THE RULES & REFUND POLICY */}
+              {paymentTab !== 'card' && (
+                <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 space-y-2.5 text-xs">
+                  <p className="text-[11px] text-slate-300">
+                    <strong>Refund Policy:</strong> If you are not satisfied, email us at{' '}
+                    <a href="mailto:okeke12347@gmail.com" className="text-indigo-400 underline">
+                      okeke12347@gmail.com
+                    </a>{' '}
+                    within 7 days of payment for a refund.
+                  </p>
+                  <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                    <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline hover:text-indigo-300">
+                      Terms of Service
+                    </a>
+                    <span>•</span>
+                    <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline hover:text-indigo-300">
+                      Privacy Policy
+                    </a>
+                  </div>
+                  <label className="flex items-start gap-2.5 text-xs text-slate-200 cursor-pointer pt-1 select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedToPaymentRules}
+                      onChange={(e) => setAgreedToPaymentRules(e.target.checked)}
+                      required
+                      className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-950 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span>I have read the Terms and Privacy Policy.</span>
+                  </label>
+                </div>
+              )}
+
               {/* ACTION BUTTON */}
               <button
                 type="button"
                 onClick={paymentTab === 'card' ? handleProcessCardPayment : handleSubmitBankProof}
-                disabled={isProcessing}
-                className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold text-sm shadow-xl shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-60"
+                disabled={isProcessing || (paymentTab !== 'card' && !agreedToPaymentRules)}
+                className="w-full flex items-center justify-center gap-2 py-3.5 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-extrabold text-sm shadow-xl shadow-amber-500/20 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isProcessing ? (
                   <span>Submitting Proof for Verification...</span>
@@ -1133,7 +1239,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
               <div className="flex flex-col sm:flex-row items-center justify-between pt-1 text-[10px] text-slate-400 gap-2">
                 <span className="flex items-center gap-1">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  Settlement Account: Fidelity Bank 3004543080
+                  Manual Verification • Account: OKEKE CHIEMERIA JOHN
                 </span>
                 
                 {onOpenAdmin && (

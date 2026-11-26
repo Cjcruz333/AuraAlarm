@@ -24,6 +24,7 @@ const DEFAULT_DATA = {
   feedbackMessages: [],
   subscriptions: [],
   transactions: [],
+  payments: [],
   referralRewards: []
 };
 
@@ -44,7 +45,9 @@ export class Database {
     try {
       if (fs.existsSync(this.dbFile)) {
         const raw = fs.readFileSync(this.dbFile, 'utf-8');
-        return normalizeData(JSON.parse(raw));
+        const normalized = normalizeData(JSON.parse(raw));
+        this.migratePayments(normalized);
+        return normalized;
       }
     } catch (err) {
       console.error('Failed to load database.json, initializing defaults:', err);
@@ -54,8 +57,43 @@ export class Database {
     return emptyData();
   }
 
+  migratePayments(data = this.data) {
+    if (!data.payments) {
+      data.payments = [];
+    }
+    const existingIds = new Set(data.payments.map(p => p.id));
+    let addedCount = 0;
+    for (const t of (data.transactions || [])) {
+      if (!existingIds.has(t.id)) {
+        data.payments.push({
+          id: t.id,
+          userId: t.userId,
+          userName: t.userName || '',
+          userEmail: t.userEmail || '',
+          plan: t.planName || t.planId || 'Aura Pro',
+          planId: t.planId || 'pro_monthly',
+          amount: t.amount || 0,
+          currency: t.currency || 'NGN',
+          dateSubmitted: t.createdAt || new Date().toISOString(),
+          proofReference: t.transactionReference || t.reference || '',
+          receiptUrl: t.receiptUrl || null,
+          senderName: t.senderName || '',
+          senderBank: t.senderBank || '',
+          status: t.status === 'approved' ? 'confirmed' : (t.status === 'rejected' ? 'rejected' : 'pending'),
+          confirmedBy: t.approvedBy || t.rejectedBy || null,
+          dateConfirmed: t.verifiedAt || t.rejectedAt || null,
+          rejectionReason: t.rejectionReason || null,
+          notes: t.notes || ''
+        });
+        addedCount++;
+      }
+    }
+    return addedCount;
+  }
+
   async initialize() {
     if (!this.pool) {
+      this.migratePayments(this.data);
       if (process.env.NODE_ENV === 'production') {
         throw new Error('DATABASE_URL is required in production');
       }
@@ -69,12 +107,38 @@ export class Database {
       )
     `);
 
+    // PostgreSQL payments table for dedicated records, accounting and tax auditing
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS payments (
+        id VARCHAR(64) PRIMARY KEY,
+        user_id VARCHAR(64) NOT NULL,
+        plan VARCHAR(128) NOT NULL,
+        amount NUMERIC NOT NULL,
+        currency VARCHAR(16) DEFAULT 'NGN',
+        date_submitted TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+        proof_reference VARCHAR(256),
+        receipt_url TEXT,
+        sender_name VARCHAR(256),
+        sender_bank VARCHAR(256),
+        status VARCHAR(32) NOT NULL DEFAULT 'pending',
+        confirmed_by VARCHAR(128),
+        date_confirmed TIMESTAMP WITH TIME ZONE,
+        rejection_reason TEXT,
+        notes TEXT,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )
+    `);
+
     const result = await this.pool.query(
       'SELECT payload FROM auraalarm_state WHERE id = 1'
     );
 
     if (result.rows.length > 0) {
       this.data = normalizeData(result.rows[0].payload);
+      const migrated = this.migratePayments(this.data);
+      if (migrated > 0) {
+        await this.save();
+      }
       return;
     }
 

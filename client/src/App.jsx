@@ -523,13 +523,13 @@ export default function App() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">Payment Proof Submitted • Awaiting Bank Verification</span>
+                      <span className="text-sm font-bold text-white">Payment proof received. We will confirm within 24 hours.</span>
                       <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                        PENDING
+                        Pending
                       </span>
                     </div>
                     <p className="text-xs text-slate-300">
-                      Your transfer reference ({user.pendingReference || 'Under Review'}) is being verified against Fidelity Bank account 3004543080.
+                      Reference ({user.pendingReference || 'Under Review'}) is awaiting manual verification against our bank records.
                     </p>
                   </div>
                 </div>
@@ -540,6 +540,34 @@ export default function App() {
                   View Submitted Proof
                 </button>
               </div>
+            ) : user?.subscriptionStatus === 'rejected' ? (
+              <div className="rounded-2xl p-4 bg-gradient-to-r from-rose-500/20 via-slate-900 to-rose-500/10 border border-rose-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                    <Shield className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-white">Payment Not Confirmed</span>
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                        Rejected
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-300">
+                      Reason: {user.rejectionReason || 'Transfer could not be verified.'} • Questions? Email{' '}
+                      <a href="mailto:okeke12347@gmail.com" className="text-rose-300 underline hover:text-rose-200">
+                        okeke12347@gmail.com
+                      </a>.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={openSubscription}
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/40 text-xs font-bold transition-all shrink-0"
+                >
+                  Resubmit Proof
+                </button>
+              </div>
             ) : hasActiveSubscription(user) ? (
               <div className="rounded-2xl p-4 bg-gradient-to-r from-amber-500/15 via-slate-900 to-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
@@ -548,13 +576,19 @@ export default function App() {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-bold text-white">Aura {user.proPlanName || 'VIP Member'} Active</span>
+                      <span className="text-sm font-bold text-white">
+                        {user.isPro && user.subscriptionStatus === 'active'
+                          ? (user.proExpiresAt
+                              ? `Your VIP plan is active until ${new Date(user.proExpiresAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}. Thank you!`
+                              : 'Your VIP plan is active (Lifetime). Thank you!')
+                          : `Aura ${user.proPlanName || 'VIP Member'} Active`}
+                      </span>
                       <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
                         {user.proBadge || 'VIP'}
                       </span>
                     </div>
                     <p className="text-xs text-slate-300">
-                      All VIP sleep frequencies, couple safe pings, and unlimited geofence alerts are permanently unlocked.
+                      All VIP sleep frequencies, couple safe pings, and unlimited geofence alerts are unlocked.
                     </p>
                   </div>
                 </div>
