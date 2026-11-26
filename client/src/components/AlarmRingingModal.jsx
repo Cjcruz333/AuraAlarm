@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { speechService } from '../services/speechService.js';
 import { api } from '../services/api.js';
+import { audioEngine } from '../services/audioService.js';
 
 export const AlarmRingingModal = () => {
   const { ringingAlarm, snoozeAlarm, dismissAlarm } = useAlarm();
@@ -16,7 +17,13 @@ export const AlarmRingingModal = () => {
     if (ringingAlarm) {
       const timeGreeting = speechService.getTimeBasedGreeting();
       setGreeting(timeGreeting);
+    } else {
+      // Ensure all audio is stopped when modal closes
+      audioEngine.stopAlarmSound();
     }
+    return () => {
+      audioEngine.stopAlarmSound();
+    };
   }, [ringingAlarm]);
 
   if (!ringingAlarm) return null;

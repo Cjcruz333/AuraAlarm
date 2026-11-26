@@ -303,7 +303,6 @@ class AudioEngine {
 
   async playAlarmSound(soundId = 'gentle_chimes', customUrl = null) {
     this.stopAlarmSound();
-    this.stopKeepAlive();
     const ctx = this.init();
     if (ctx.state === 'suspended') {
       try {
@@ -313,34 +312,21 @@ class AudioEngine {
       }
     }
 
-    // If custom uploaded audio exists, play it
-    if (customUrl) {
-      try {
-        this.customAudioPlayer = new Audio(customUrl);
-        this.customAudioPlayer.loop = true;
-        this.customAudioPlayer.volume = 0.9;
-        this.customAudioPlayer.play().catch(e => {
-          console.warn('Audio play restricted or failed, falling back to synth chime:', e);
-          this.startChimeLoop(soundId);
-        });
-        return;
-      } catch (err) {
-        console.error('Custom audio error:', err);
-      }
+    // Always play /alarm_chime.wav at full volume in a loop while app is open
+    try {
+      this.alarmChimePlayer = new Audio(customUrl || '/alarm_chime.wav');
+      this.alarmChimePlayer.loop = true;
+      this.alarmChimePlayer.volume = 1.0;
+      this.alarmChimePlayer.playsInline = true;
+      this.alarmChimePlayer.play().catch(err => {
+        console.warn('Direct HTML5 audio play failed, falling back to WebAudio oscillator chime:', err);
+        this.startChimeLoop(soundId);
+      });
+    } catch (e) {
+      this.startChimeLoop(soundId);
     }
 
-    // If WebAudio is still suspended by browser policy, also try HTML5 Audio chime file
-    if (ctx.state !== 'running') {
-      try {
-        this.customAudioPlayer = new Audio('/alarm_chime.wav');
-        this.customAudioPlayer.loop = true;
-        this.customAudioPlayer.volume = 1.0;
-        this.customAudioPlayer.play().catch(() => {});
-      } catch {
-        // ignore
-      }
-    }
-
+    // Also run chime loop as supplementary/fallback synthesizer
     this.startChimeLoop(soundId);
   }
 
@@ -382,28 +368,68 @@ class AudioEngine {
   }
 
   stopAlarmSound() {
+    // 1. Clear all timers and loops first
     if (this.alarmInterval) {
       clearInterval(this.alarmInterval);
       this.alarmInterval = null;
     }
-    if (this.customAudioPlayer) {
+    if (this.alarmLoopTimer) {
+      clearTimeout(this.alarmLoopTimer);
+      this.alarmLoopTimer = null;
+    }
+
+    // 2. Pause every audio element, set loop=false, currentTime=0, and remove src
+    const audiosToReset = [this.customAudioPlayer, this.keepAlivePlayer, this.alarmChimePlayer];
+    audiosToReset.forEach(player => {
+      if (player) {
+        try {
+          player.pause();
+          player.loop = false;
+          player.currentTime = 0;
+          player.removeAttribute('src');
+          player.load();
+        } catch (e) {
+          // ignore
+        }
+      }
+    });
+    this.customAudioPlayer = null;
+    this.keepAlivePlayer = null;
+    this.alarmChimePlayer = null;
+
+    // 3. Stop all Web Audio nodes and suspend the AudioContext
+    if (Array.isArray(this.activeNodes)) {
+      this.activeNodes.forEach(node => {
+        try {
+          if (typeof node.stop === 'function') node.stop();
+          if (typeof node.disconnect === 'function') node.disconnect();
+        } catch (e) {
+          // ignore
+        }
+      });
+      this.activeNodes = [];
+    }
+
+    if (this.ctx) {
       try {
-        this.customAudioPlayer.pause();
-        this.customAudioPlayer.currentTime = 0;
+        if (this.ctx.state !== 'closed' && typeof this.ctx.suspend === 'function') {
+          this.ctx.suspend().catch(() => {});
+        }
       } catch (e) {
         // ignore
       }
-      this.customAudioPlayer = null;
     }
-    // Stop the audible alarm sound on keepAlivePlayer immediately
-    if (this.keepAlivePlayer) {
+
+    // 4. Cancel speech synthesis
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
-        this.keepAlivePlayer.pause();
-        this.keepAlivePlayer.currentTime = 0;
+        window.speechSynthesis.cancel();
       } catch (e) {
         // ignore
       }
     }
+
+    // 5. Stop vibration
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       try {
         navigator.vibrate(0);
@@ -411,9 +437,31 @@ class AudioEngine {
         // ignore
       }
     }
+
+    // 6. Clear mediaSession (playbackState 'none', metadata null)
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
       try {
         navigator.mediaSession.playbackState = 'none';
+        navigator.mediaSession.metadata = null;
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    // 7. Close open notifications via registration.getNotifications()
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      try {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg && typeof reg.getNotifications === 'function') {
+            reg.getNotifications().then(notifications => {
+              if (Array.isArray(notifications)) {
+                notifications.forEach(n => {
+                  try { n.close(); } catch (err) {}
+                });
+              }
+            }).catch(() => {});
+          }
+        }).catch(() => {});
       } catch (e) {
         // ignore
       }

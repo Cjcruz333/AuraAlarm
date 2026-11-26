@@ -407,6 +407,15 @@ export default function App() {
         ) : null
       )}
 
+      {/* Nighttime Alarm Advice Banner */}
+      {alarms.some(a => a && a.active) && (
+        <div className="bg-slate-900/90 border-b border-indigo-500/20 py-2.5 px-4 text-center">
+          <p className="text-xs text-indigo-300 font-medium">
+            🌙 <strong>Tip for tonight:</strong> Keep AuraAlarm open and your phone plugged in tonight. Keep your phone's built-in alarm as a backup.
+          </p>
+        </div>
+      )}
+
       {/* Habit Milestone / Notification Toast Bar */}
       {milestoneToast && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 w-full animate-fadeIn">

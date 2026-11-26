@@ -1,8 +1,8 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 
-const ALARM_CHANNEL_ID = 'aura-alarms';
-const REMINDER_CHANNEL_ID = 'aura-reminders';
+const ALARM_CHANNEL_ID = 'aura-alarms-v2';
+const REMINDER_CHANNEL_ID = 'aura-reminders-v2';
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 class NotificationService {

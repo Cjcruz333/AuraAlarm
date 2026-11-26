@@ -48,15 +48,38 @@ export const AlarmProvider = ({ children }) => {
     return status;
   };
 
-  // Keep background audio session alive on mobile (iOS PWA / Web) when any alarm is active
+  // Screen Wake Lock API management when any alarm is active
   useEffect(() => {
+    let wakeLockSentinel = null;
     const activeList = alarms.filter(a => a && a.active);
-    if (activeList.length > 0 && !ringingAlarm) {
-      audioEngine.startKeepAlive(`Next alarm: ${activeList[0].time}`);
-    } else if (activeList.length === 0) {
-      audioEngine.stopKeepAlive();
-    }
-  }, [alarms, ringingAlarm]);
+
+    const requestWakeLock = async () => {
+      if ('wakeLock' in navigator && activeList.length > 0 && document.visibilityState === 'visible') {
+        try {
+          wakeLockSentinel = await navigator.wakeLock.request('screen');
+        } catch (err) {
+          console.warn('Wake Lock request error:', err);
+        }
+      }
+    };
+
+    requestWakeLock();
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (wakeLockSentinel) {
+        wakeLockSentinel.release().catch(() => {});
+      }
+    };
+  }, [alarms]);
 
   // Load private alarm data when account has an active subscription or 7-day free trial.
   useEffect(() => {
