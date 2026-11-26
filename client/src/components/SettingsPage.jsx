@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Bell, Clock3, Globe2, LogOut, Settings2, Volume2 } from 'lucide-react';
+import { Bell, Clock3, Globe2, LogOut, Settings2, Volume2, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { SUPPORTED_LANGUAGES } from '../i18n.js';
+import { api } from '../services/api.js';
 
 const getNotificationPermission = () => {
   if (typeof window === 'undefined' || !('Notification' in window)) return 'unsupported';
@@ -37,6 +38,25 @@ export const SettingsPage = () => {
   } = useSettings();
   const [notificationPermission, setNotificationPermission] = useState(getNotificationPermission);
   const [notificationError, setNotificationError] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    const confirmed = window.confirm(
+      'Are you sure you want to permanently delete your account? This will erase your account, all alarms, location reminders, and uploaded photos from our database. This action cannot be undone.'
+    );
+    if (!confirmed) return;
+
+    setIsDeleting(true);
+    try {
+      await api.deleteAccount();
+      alert('Your account and associated data have been deleted successfully.');
+      logout();
+    } catch (err) {
+      alert(err.message || 'Failed to delete account. Please try again.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   useEffect(() => {
     const refreshPermission = () => setNotificationPermission(getNotificationPermission());
@@ -160,6 +180,24 @@ export const SettingsPage = () => {
           })}
         </select>
       </SettingCard>
+
+      {user && (
+        <SettingCard icon={Trash2} title={t('Account & Data')}>
+          <div className="space-y-3">
+            <p className="text-xs text-slate-300">
+              Permanently delete your account, alarms, location reminders, and uploaded photos from our database.
+            </p>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={isDeleting}
+              className="rounded-xl bg-rose-600/20 border border-rose-500/40 px-4 py-2.5 text-xs font-bold text-rose-300 hover:bg-rose-600 hover:text-white transition-colors disabled:opacity-50"
+            >
+              {isDeleting ? 'Deleting account...' : 'Delete my account'}
+            </button>
+          </div>
+        </SettingCard>
+      )}
     </div>
   );
 };

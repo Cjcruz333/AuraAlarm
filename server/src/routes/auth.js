@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer';
 import { v4 as uuidv4 } from 'uuid';
 import multer from 'multer';
 import path from 'path';
+import fs from 'fs';
 import rateLimit from 'express-rate-limit';
 import { db, UPLOADS_DIR } from '../db.js';
 import { JWT_SECRET, authMiddleware, isAdminUser, subscriberMiddleware } from '../middleware/auth.js';
@@ -439,5 +440,59 @@ router.post('/upload-photo', subscriberMiddleware, upload.single('photo'), (req,
     res.status(500).json({ error: 'Photo upload failed' });
   }
 });
+
+// DELETE /me or /account - Permanently delete account and all associated user data
+const deleteUserAccountHandler = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = db.findOne('users', u => u.id === userId);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Collect uploaded photo files to delete from disk
+    const photosToDelete = [];
+    if (user.lovedOne?.photoUrl) photosToDelete.push(user.lovedOne.photoUrl);
+    if (user.photoUrl) photosToDelete.push(user.photoUrl);
+
+    const userTransactions = db.find('transactions', t => t.userId === userId);
+    userTransactions.forEach(t => {
+      if (t.receiptUrl) photosToDelete.push(t.receiptUrl);
+    });
+
+    for (const photoUrl of photosToDelete) {
+      if (typeof photoUrl === 'string' && photoUrl.startsWith('/uploads/')) {
+        const filename = path.basename(photoUrl);
+        const filepath = path.join(UPLOADS_DIR, filename);
+        if (fs.existsSync(filepath)) {
+          try {
+            fs.unlinkSync(filepath);
+          } catch (e) {
+            console.warn('Could not remove file on account deletion:', filepath, e);
+          }
+        }
+      }
+    }
+
+    // Delete all records from database collections
+    await db.delete('alarms', a => a.userId === userId);
+    await db.delete('locationReminders', l => l.userId === userId);
+    await db.delete('sleepSessions', s => s.userId === userId);
+    await db.delete('calendarEvents', c => c.userId === userId);
+    await db.delete('fitnessLogs', f => f.userId === userId);
+    await db.delete('nutritionLogs', n => n.userId === userId);
+    await db.delete('lovedOnePings', p => p.userId === userId);
+    await db.delete('subscriptions', s => s.userId === userId);
+    await db.delete('transactions', t => t.userId === userId);
+    await db.delete('referralRewards', r => r.userId === userId || r.referredUserId === userId);
+    await db.delete('users', u => u.id === userId);
+
+    res.json({ message: 'Account, alarms, uploaded photos, and location reminders deleted permanently' });
+  } catch (err) {
+    console.error('Account deletion error:', err);
+    res.status(500).json({ error: 'Failed to delete account' });
+  }
+};
+
+router.delete('/me', authMiddleware, deleteUserAccountHandler);
+router.delete('/account', authMiddleware, deleteUserAccountHandler);
 
 export default router;

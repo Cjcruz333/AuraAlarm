@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { X, Fingerprint, ShieldCheck } from 'lucide-react';
+import { X, Lock, ShieldCheck, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../services/api.js';
 import { trackSignUp } from '../services/analytics.js';
-import confetti from 'canvas-confetti';
 
-export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', resetToken = '', onResetComplete, canClose = true }) => {
-  const { user, loginBiometric, enrollBiometrics, login, register, logout } = useAuth();
+export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'login', resetToken = '', onResetComplete, canClose = true }) => {
+  const { user, login, register, logout } = useAuth();
   const [tab, setTab] = useState(initialTab);
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -14,54 +13,24 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [referralCode, setReferralCode] = useState(() => new URLSearchParams(window.location.search).get('ref') || '');
-  const [statusMsg, setStatusMsg] = useState('');
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [passwordResetMessage, setPasswordResetMessage] = useState('');
   const [passwordResetError, setPasswordResetError] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (isOpen) setTab(user && !resetToken ? 'biometric' : initialTab);
+    if (isOpen) {
+      if (resetToken) {
+        setTab('reset');
+      } else if (user) {
+        setTab('account');
+      } else {
+        setTab(initialTab === 'account' || initialTab === 'biometric' ? 'login' : initialTab);
+      }
+    }
   }, [initialTab, isOpen, resetToken, user]);
 
   if (!isOpen) return null;
-
-  const handleBiometricAuth = async () => {
-    setIsProcessing(true);
-    setStatusMsg('Scanning biometric sensor (Touch ID / Windows Hello / Face ID)...');
-    try {
-      await loginBiometric();
-      confetti({ particleCount: 50, spread: 60 });
-      setStatusMsg('Biometric authentication verified!');
-      setTimeout(() => {
-        onClose();
-        setStatusMsg('');
-      }, 1000);
-    } catch (err) {
-      console.warn('Biometric auth error:', err);
-      setStatusMsg('Biometric verification prompt finished.');
-      setTimeout(() => setStatusMsg(''), 2500);
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
-  const handleEnrollBiometrics = async () => {
-    setIsProcessing(true);
-    setStatusMsg('Registering this device biometric credentials...');
-    try {
-      await enrollBiometrics();
-      confetti({ particleCount: 60, spread: 70 });
-      setStatusMsg('Device biometrics securely enrolled!');
-      setTimeout(() => {
-        setStatusMsg('');
-      }, 2000);
-    } catch (err) {
-      console.warn('Biometric enrollment notice:', err);
-      setStatusMsg('Device enrolled.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   const handleStandardLogin = async (e) => {
     e.preventDefault();
@@ -78,6 +47,10 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
 
   const handleStandardRegister = async (e) => {
     e.preventDefault();
+    if (!agreedToTerms) {
+      alert('Please agree to the Terms and Privacy Policy to create an account.');
+      return;
+    }
     setIsProcessing(true);
     try {
       await register({ username, email, password, referralCode });
@@ -147,7 +120,7 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
         {/* Header */}
         <div className="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
           <div className="flex items-center gap-2">
-            <Fingerprint className="w-5 h-5 text-indigo-400" />
+            <Lock className="w-5 h-5 text-indigo-400" />
             <h3 className="text-lg font-bold text-white">
               {tab === 'forgot'
                 ? 'Forgot Password'
@@ -157,11 +130,11 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                     ? 'Sign In to AuraAlarm'
                     : tab === 'register'
                       ? 'Create Your Account'
-                      : 'Biometric Security & Passkeys'}
+                      : 'Account Profile'}
             </h3>
           </div>
           {canClose && (
-            <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white">
+            <button onClick={onClose} className="p-1 rounded-lg text-slate-400 hover:text-white" aria-label="Close">
               <X className="w-5 h-5" />
             </button>
           )}
@@ -171,96 +144,76 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
           <section className="mb-5">
             <h1 className="text-xl font-extrabold text-white">AuraAlarm Smart Alarm Clock</h1>
             <p className="mt-2 text-sm text-slate-400">
-              AuraAlarm, also known as Aura Alarm, is a web alarm clock with customizable alarms, a world clock, sleep sounds, and wellness tools. Sign in or create an account to get started.
+              AuraAlarm is a web alarm clock with customizable alarms, a world clock, sleep sounds, and wellness tools. Sign in or create an account to get started.
             </p>
           </section>
         )}
 
-        {/* Tab Switcher */}
-        {!user && !['forgot', 'reset'].includes(tab) && <div className="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
-          <button
-            onClick={() => setTab('biometric')}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              tab === 'biometric' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Biometric
-          </button>
-          <button
-            onClick={() => setTab('login')}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              tab === 'login' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            onClick={() => setTab('register')}
-            className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-              tab === 'register' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Create Account
-          </button>
-        </div>}
-
-        {/* TAB 1: BIOMETRIC LOGIN & ENROLLMENT */}
-        {tab === 'biometric' && (
-          <div className="flex flex-col items-center text-center space-y-6">
-            <div className="relative">
-              <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-indigo-600/30 to-violet-600/30 border-2 border-indigo-500/50 flex items-center justify-center shadow-xl">
-                <Fingerprint className={`w-12 h-12 text-indigo-400 ${isProcessing ? 'animate-pulse' : ''}`} />
-              </div>
-            </div>
-
-            <div>
-              <h4 className="text-base font-bold text-white mb-1">
-                Fast & Secure Biometric Access
-              </h4>
-              <p className="text-xs text-slate-400 max-w-xs">
-                Unlock alarms, encrypted notes, and loved one peace-of-mind updates with Touch ID, Face ID, or Windows Hello.
-              </p>
-            </div>
-
-            {statusMsg && (
-              <p className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-xl border border-emerald-500/20">
-                {statusMsg}
-              </p>
-            )}
-
-            <div className="w-full space-y-3">
-              <button
-                onClick={handleBiometricAuth}
-                disabled={isProcessing}
-                className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 active:scale-95"
-              >
-                <Fingerprint className="w-4 h-4" />
-                <span>Sign In with Biometrics</span>
-              </button>
-
-              {user && (
-                <button
-                  onClick={handleEnrollBiometrics}
-                  disabled={isProcessing}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors border border-slate-700"
-                >
-                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <span>Enroll This Device's Sensor</span>
-                </button>
-              )}
-            </div>
-
-            {user && (
-              <div className="pt-2 border-t border-slate-800 w-full flex items-center justify-between text-xs text-slate-400">
-                <span>Signed in as: <strong className="text-white">{user.username}</strong></span>
-                <button onClick={logout} className="text-rose-400 hover:underline">Log Out</button>
-              </div>
-            )}
+        {/* Tab Switcher for non-logged-in users */}
+        {!user && !['forgot', 'reset'].includes(tab) && (
+          <div className="flex rounded-xl bg-slate-900 p-1 mb-6 border border-slate-800">
+            <button
+              onClick={() => setTab('login')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                tab === 'login' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Sign In
+            </button>
+            <button
+              onClick={() => setTab('register')}
+              className={`flex-1 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                tab === 'register' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Create Account
+            </button>
           </div>
         )}
 
-        {/* TAB 2: STANDARD LOGIN */}
-        {tab === 'login' && (
+        {/* TAB: SIGNED IN PROFILE OVERVIEW */}
+        {user && tab === 'account' && (
+          <div className="flex flex-col items-center text-center space-y-6">
+            <div className="w-20 h-20 rounded-full bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center text-indigo-400 shadow-lg">
+              <User className="w-10 h-10" />
+            </div>
+
+            <div>
+              <h4 className="text-base font-bold text-white mb-0.5">
+                {user.username}
+              </h4>
+              <p className="text-xs text-slate-400">
+                {user.email || 'No email attached'}
+              </p>
+              <div className="mt-2 flex items-center justify-center gap-2">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <ShieldCheck className="w-3 h-3" />
+                  Secure sign-in
+                </span>
+                {user.isPro && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    {user.proBadge || 'VIP PRO'}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="w-full space-y-3 pt-2 border-t border-slate-800">
+              <button
+                onClick={() => {
+                  logout();
+                  setTab('login');
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-rose-400 text-xs font-bold transition-colors border border-slate-700"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: STANDARD LOGIN */}
+        {tab === 'login' && !user && (
           <form onSubmit={handleStandardLogin} className="space-y-4">
             {passwordResetMessage && (
               <p role="status" className={`text-xs rounded-xl px-3 py-2 ${passwordResetError ? 'text-rose-300 bg-rose-500/10' : 'text-emerald-300 bg-emerald-500/10'}`}>
@@ -275,7 +228,8 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Username or email"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                autoComplete="username"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
@@ -286,7 +240,8 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Password"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                autoComplete="current-password"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div className="flex justify-end -mt-2">
@@ -297,13 +252,14 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
             <button
               type="submit"
               disabled={isProcessing}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md"
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md disabled:opacity-60"
             >
-              Sign In
+              {isProcessing ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
         )}
 
+        {/* TAB: FORGOT PASSWORD */}
         {tab === 'forgot' && (
           <form onSubmit={handleForgotPassword} className="space-y-4">
             <p className="text-xs text-slate-400">
@@ -323,7 +279,7 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
                 placeholder="you@example.com"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <button
@@ -339,6 +295,7 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
           </form>
         )}
 
+        {/* TAB: RESET PASSWORD */}
         {tab === 'reset' && (
           <form onSubmit={handlePasswordReset} className="space-y-4">
             <p className="text-xs text-slate-400">Choose a new password with at least 12 characters.</p>
@@ -386,8 +343,8 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
           </form>
         )}
 
-        {/* TAB 3: REGISTER */}
-        {tab === 'register' && (
+        {/* TAB: REGISTER */}
+        {tab === 'register' && !user && (
           <form onSubmit={handleStandardRegister} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-400 mb-1">Username</label>
@@ -397,7 +354,8 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="champion"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                autoComplete="username"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
@@ -408,7 +366,8 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="user@auraalarm.app"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                autoComplete="email"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
@@ -419,7 +378,8 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                autoComplete="new-password"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
             <div>
@@ -430,15 +390,39 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'biometric', 
                 onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
                 placeholder="Enter your invite code"
                 autoComplete="off"
-                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white"
+                className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
+
+            {/* Terms and Privacy Policy Mandatory Agreement Checkbox */}
+            <div className="pt-1">
+              <label className="flex items-start gap-2.5 text-xs text-slate-300 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  required
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded border-slate-700 bg-slate-900 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-950"
+                />
+                <span className="leading-tight">
+                  By signing up you agree to our{' '}
+                  <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline hover:text-indigo-300">
+                    Terms
+                  </a>{' '}
+                  and{' '}
+                  <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="text-indigo-400 underline hover:text-indigo-300">
+                    Privacy Policy
+                  </a>.
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={isProcessing}
-              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md"
+              disabled={isProcessing || !agreedToTerms}
+              className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Create Account
+              {isProcessing ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
         )}

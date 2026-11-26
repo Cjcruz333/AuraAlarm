@@ -99,7 +99,7 @@ export const Navbar = ({
                     AuraAlarm
                   </span>
                   <span className="hidden sm:inline-flex px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-full">
-                    E2EE
+                    HTTPS
                   </span>
                 </div>
                 <p
@@ -194,14 +194,14 @@ export const Navbar = ({
               </button>
             )}
 
-            {/* Biometric Authenticator Status */}
+            {/* Account Sign-In / Profile */}
             <button
               onClick={onOpenBiometrics}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 transition-colors"
-              title="Biometric Security (Touch ID / Face ID)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold hover:bg-slate-700 transition-colors"
+              title="Account Sign-In"
             >
-              <Fingerprint className="w-4 h-4" />
-              <span className="hidden sm:inline">Secure</span>
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">{user ? 'Account' : 'Sign In'}</span>
             </button>
 
             {/* Install Mobile App Button */}

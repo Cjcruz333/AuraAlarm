@@ -157,7 +157,7 @@ export default function App() {
   }, [shouldCheckReferralReminder, user?.id, user?.proExpiresAt]);
 
   const openAuth = (tab = 'login') => {
-    setAuthModalTab(user ? 'biometric' : tab);
+    setAuthModalTab(user ? 'account' : tab);
     setIsBiometricModalOpen(true);
   };
 
@@ -319,7 +319,7 @@ export default function App() {
       <Navbar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        onOpenBiometrics={() => openAuth(user ? 'biometric' : 'login')}
+        onOpenBiometrics={() => openAuth(user ? 'account' : 'login')}
         onOpenFeedback={() => setIsFeedbackModalOpen(true)}
         onOpenCalendar={() => setIsCalendarModalOpen(true)}
         onOpenShare={handleOpenStreakShare}
@@ -486,7 +486,7 @@ export default function App() {
               <div className="relative z-10 max-w-2xl">
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-semibold mb-3">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Biometric Verified • E2EE Cloud Sync</span>
+                  <span>Secure sign-in • Encrypted in transit (HTTPS)</span>
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-2">
                   Minimalist Smart Alarms
@@ -735,10 +735,19 @@ export default function App() {
 
       {/* Minimalist Footer */}
       <footer className="border-t border-slate-800/80 glass-panel py-6 mt-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-200">AuraAlarm</span>
-            <span>• Next-Gen Alarm, Sleep & Wellness Platform</span>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 text-center sm:text-left">
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-slate-200">AuraAlarm</span>
+              <span>• Next-Gen Alarm, Sleep & Wellness Platform</span>
+            </div>
+            <div className="flex items-center gap-3 text-xs">
+              <a href="/about.html" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-indigo-400 transition-colors">About</a>
+              <span>•</span>
+              <a href="/privacy.html" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-indigo-400 transition-colors">Privacy Policy</a>
+              <span>•</span>
+              <a href="/terms.html" target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-indigo-400 transition-colors">Terms of Service</a>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
@@ -768,8 +777,8 @@ export default function App() {
             </button>
             <button
               onClick={() => setIsBiometricModalOpen(true)}
-              aria-label="E2EE 256-Bit"
-              title="E2EE 256-Bit"
+              aria-label="Encrypted in transit (HTTPS)"
+              title="Encrypted in transit (HTTPS)"
               className="p-2.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-slate-800/80 transition-colors"
             >
               <ShieldCheck className="w-5 h-5" />

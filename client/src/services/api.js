@@ -88,6 +88,14 @@ class ApiService {
     return data;
   }
 
+  async deleteAccount() {
+    const data = await this.request('/auth/me', {
+      method: 'DELETE'
+    });
+    this.setToken(null);
+    return data;
+  }
+
   async biometricLogin(credentialId) {
     const data = await this.request('/auth/biometric/login', {
       method: 'POST',

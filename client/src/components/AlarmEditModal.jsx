@@ -738,7 +738,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
                   <Lock className="w-3.5 h-3.5 text-emerald-400" />
                   <span>Encrypted Vault Note (AES-256-GCM)</span>
                 </span>
-                <span className="text-[10px] text-emerald-400 font-mono">E2EE Protected</span>
+                <span className="text-[10px] text-emerald-400 font-mono">Encrypted Note</span>
               </div>
               <textarea
                 rows="2"

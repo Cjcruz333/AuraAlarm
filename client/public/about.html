@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About AuraAlarm - Modern Smart Alarm & Sleep Aid</title>
+  <link rel="icon" type="image/svg+xml" href="/icons/icon-192.png">
+  <style>
+    :root {
+      --bg: #090d16;
+      --card-bg: #111827;
+      --border: #1f293d;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+    header {
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.5rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: #fff;
+      margin-top: 2rem;
+      margin-bottom: 0.75rem;
+    }
+    p, ul {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.5rem;
+      margin: 1.5rem 0;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-top: 1rem;
+      padding: 0.6rem 1.2rem;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 0.75rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+    }
+    .back-btn:hover {
+      background: var(--accent-hover);
+      text-decoration: none;
+    }
+    footer {
+      margin-top: 3rem;
+      border-top: 1px solid var(--border);
+      padding-top: 1.5rem;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>About AuraAlarm</h1>
+      <p>A smart, reliable web alarm clock, world clock, and wellness platform designed for restorative sleep and mindful mornings.</p>
+    </header>
+
+    <main>
+      <h2>What is AuraAlarm?</h2>
+      <p>
+        AuraAlarm is a progressive web application (PWA) built to provide dependable alarms, customizable wake-up tones, world clocks across major timezones, calming ambient soundscapes, and arrival reminder geofences.
+      </p>
+
+      <div class="card">
+        <h2 style="margin-top:0;">Core Features</h2>
+        <ul>
+          <li><strong>Smart Alarm Clock:</strong> Set recurring alarms, custom snooze intervals, and personalized wake-up sounds.</li>
+          <li><strong>World Clock:</strong> Live multi-timezone clocks for global coordination.</li>
+          <li><strong>Sleep Aid Soundscapes:</strong> Calming ambient audio, white noise, and relaxing frequencies to help you fall asleep peacefully.</li>
+          <li><strong>Arrival & Destination Alerts:</strong> Geofence reminders that alert you upon arriving at destinations like work, gym, or home.</li>
+          <li><strong>Stopwatch & Timers:</strong> High-precision lap timers and countdowns for workouts and daily routines.</li>
+        </ul>
+      </div>
+
+      <h2>Created by John Okeke</h2>
+      <p>
+        AuraAlarm was designed and developed by John Okeke as a high-performance, user-respecting web application. We believe in transparency, reliable code, and privacy-conscious design.
+      </p>
+
+      <h2>Technology & Open Standards</h2>
+      <p>
+        AuraAlarm is built with React, Vite, Tailwind CSS, the Web Audio API, Service Workers for offline asset caching, and an Express/Node.js backend. All data transmission between your browser and our servers is secured with HTTPS/TLS encryption.
+      </p>
+
+      <h2>Important Note on Web Alarms</h2>
+      <p>
+        Mobile browsers (iOS Safari and Android Chrome) enforce battery optimizations and security restrictions that may mute background audio or silence tabs when locked. For critical wake-up events, we always advise keeping your phone plugged in with the app open, or using your device's built-in native clock as a primary backup.
+      </p>
+
+      <a href="/" class="back-btn">&larr; Return to AuraAlarm App</a>
+    </main>
+
+    <footer>
+      <span>&copy; 2026 AuraAlarm. All rights reserved.</span>
+      <div>
+        <a href="/privacy.html">Privacy Policy</a> &bull;
+        <a href="/terms.html">Terms of Service</a> &bull;
+        <a href="mailto:okeke12347@gmail.com">Contact Support</a>
+      </div>
+    </footer>
+  </div>
+</body>
+</html>

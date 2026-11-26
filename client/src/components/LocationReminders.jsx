@@ -121,7 +121,7 @@ export const LocationReminders = ({ onOpenCalendar }) => {
             </span>
             <span className="text-xs text-emerald-400 flex items-center gap-1">
               <ShieldCheck className="w-3.5 h-3.5" />
-              E2EE Geofence
+              Arrival Geofence
             </span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-white">
@@ -211,6 +211,17 @@ export const LocationReminders = ({ onOpenCalendar }) => {
                 className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
+          </div>
+
+          {/* Location Consent & Transparency Notice */}
+          <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-xs text-slate-300">
+            <p className="font-semibold text-indigo-300 mb-1 flex items-center gap-1.5">
+              <Navigation className="w-3.5 h-3.5" />
+              <span>Location Permission Notice</span>
+            </p>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              We request your location solely to calculate geofence coordinates for your arrival and departure alarm reminders. We never run background tracking or share your location data, and you can turn off location permission anytime in your browser or device settings.
+            </p>
           </div>
 
           {/* GPS Coordinates and Auto-Detect */}

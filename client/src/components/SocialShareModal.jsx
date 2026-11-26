@@ -162,7 +162,7 @@ export const SocialShareModal = ({ isOpen, onClose, onOpenUpgrade }) => {
       // Footer
       ctx.fillStyle = '#94a3b8';
       ctx.font = 'bold 22px monospace';
-      ctx.fillText('POWERED BY AURAALARM • E2EE SMART ALARM & SLEEP AID SUITE', 600, 540);
+      ctx.fillText('POWERED BY AURAALARM • SMART ALARM & SLEEP AID SUITE', 600, 540);
 
       // Convert to downloadable image
       const imageUri = canvas.toDataURL('image/png');
@@ -338,7 +338,7 @@ export const SocialShareModal = ({ isOpen, onClose, onOpenUpgrade }) => {
           {/* Watermark */}
           <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 uppercase tracking-widest font-mono pt-1">
             <ShieldCheck className="w-3 h-3 text-amber-400" />
-            <span>POWERED BY AURAALARM • E2EE SMART ALARM & SLEEP AID</span>
+            <span>POWERED BY AURAALARM • SMART ALARM & SLEEP AID</span>
           </div>
         </div>
 
