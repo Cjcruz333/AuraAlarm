@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { X, Lock, ShieldCheck, User } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { api } from '../services/api.js';
-import { trackSignUp } from '../services/analytics.js';
+import { trackSignUp, trackTrialStarted } from '../services/analytics.js';
 
 export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'login', resetToken = '', onResetComplete, canClose = true }) => {
   const { user, login, register, logout } = useAuth();
@@ -55,6 +55,7 @@ export const BiometricAuthModal = ({ isOpen, onClose, initialTab = 'login', rese
     try {
       await register({ username, email, password, referralCode });
       trackSignUp();
+      trackTrialStarted();
       onClose();
     } catch (err) {
       alert(err.message || 'Registration failed');

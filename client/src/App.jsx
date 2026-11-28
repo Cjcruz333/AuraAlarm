@@ -505,6 +505,74 @@ export default function App() {
         {activeTab === 'alarms' && (
           <div className="space-y-8 animate-fadeIn">
             
+            {/* Public Landing Section for Unauthenticated Visitors */}
+            {!user && (
+              <div className="rounded-3xl glass-panel border border-indigo-500/30 p-6 sm:p-10 bg-gradient-to-br from-indigo-950/60 via-slate-950 to-slate-900/90 shadow-2xl relative overflow-hidden">
+                <div className="max-w-3xl">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs font-semibold mb-4">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                    <span>7-Day Free Trial • No Credit Card Required to Start</span>
+                  </div>
+                  <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white mb-4 leading-tight">
+                    Wake Up Energized with Smart Loved-One Alarms & Sleep Soundscapes
+                  </h1>
+                  <p className="text-base sm:text-lg text-slate-300 mb-8 leading-relaxed">
+                    AuraAlarm transforms your wake-up routine with personalized voice greetings, soothing 528Hz Solfeggio frequencies, and automatic loved-one arrival peace-of-mind alerts.
+                  </p>
+
+                  {/* 3 Core Benefits */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+                      <div className="w-9 h-9 rounded-xl bg-pink-500/10 border border-pink-500/20 flex items-center justify-center text-pink-400 mb-3">
+                        <Heart className="w-5 h-5 fill-pink-500/30 text-pink-400" />
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-1">Loved-One Wake Calls</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Wake up to your special someone's photo and custom spoken morning greeting every day.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-3">
+                        <Moon className="w-5 h-5 text-indigo-400" />
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-1">VIP Sleep Aid Sounds</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Fall asleep naturally to rain on window, ocean tides, and 528Hz healing frequencies.
+                      </p>
+                    </div>
+
+                    <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
+                      <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
+                        <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                      </div>
+                      <h3 className="text-sm font-bold text-white mb-1">Encrypted & Reliable</h3>
+                      <p className="text-xs text-slate-400 leading-relaxed">
+                        Runs smoothly in your browser with screen wake-lock, loud chimes, and zero clutter.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Call to Action Buttons & Screenshot Area */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+                    <button
+                      onClick={() => openAuth('register')}
+                      className="flex items-center justify-center gap-2.5 px-8 py-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-base shadow-xl shadow-indigo-600/30 transition-all hover:scale-105 active:scale-95"
+                    >
+                      <Sparkles className="w-5 h-5 text-amber-300" />
+                      <span>Start Free 7-Day Trial</span>
+                    </button>
+                    <button
+                      onClick={() => openAuth('login')}
+                      className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-sm border border-slate-700 transition-all"
+                    >
+                      <span>Already have an account? Sign In</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Minimalist Hero Section */}
             <div className="rounded-3xl glass-panel border border-slate-800 p-6 sm:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
               <div className="relative z-10 max-w-2xl">
