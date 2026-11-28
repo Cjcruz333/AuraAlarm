@@ -312,17 +312,21 @@ export const AlarmProvider = ({ children }) => {
 
   // Trigger Alarm
   const triggerAlarm = (alarm) => {
+    if (!alarm) return;
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    lastTriggeredMinuteRef.current = `${hours}:${minutes}`;
+
     console.log(`[AlarmContext] 🔔 triggerAlarm called for: "${alarm.label}" at ${alarm.time}`);
     setRingingAlarm(alarm);
-    // 1. Transition background audio session to audible chime (needs audio unlocked by prior user click)
-    audioEngine.triggerBackgroundAudibleChime();
-    // 2. Play the actual alarm sound (HTML5 + synth fallback)
+    // 1. Play the actual alarm sound (HTML5 single audio player + WebAudio synth fallback)
     audioEngine.playAlarmSound(alarm.soundId || 'gentle_chimes', api.resolveAssetUrl(alarm.customSoundUrl));
 
-    // 3. Ring/vibrate & show system notification on phone
+    // 2. Ring/vibrate & show system notification on phone
     notificationService.showAlarmNotification(alarm);
 
-    // 4. Play dynamic voice greeting if enabled
+    // 3. Play dynamic voice greeting if enabled
     if (alarm.speechGreeting !== false) {
       setTimeout(() => {
         const timeGreeting = speechService.getTimeBasedGreeting();
@@ -341,6 +345,12 @@ export const AlarmProvider = ({ children }) => {
 
   // Snooze Alarm
   const snoozeAlarm = () => {
+    console.log('[AlarmContext] 🌙 snoozeAlarm triggered');
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    lastTriggeredMinuteRef.current = `${hours}:${minutes}`;
+
     const current = ringingAlarm;
     audioEngine.stopAlarmSound();
     speechService.stop();
@@ -358,6 +368,12 @@ export const AlarmProvider = ({ children }) => {
 
   // Dismiss Alarm
   const dismissAlarm = async () => {
+    console.log('[AlarmContext] ☀️ dismissAlarm triggered');
+    const now = new Date();
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    lastTriggeredMinuteRef.current = `${hours}:${minutes}`;
+
     audioEngine.stopAlarmSound();
     speechService.stop();
     const current = ringingAlarm;
@@ -379,7 +395,7 @@ export const AlarmProvider = ({ children }) => {
       try {
         await api.dismissAlarm(current.id, { locationName: 'Home Base' });
       } catch (err) {
-        console.warn('Dismissal sync notice:', err);
+        console.warn('Could not record alarm dismissal to server:', err);
       }
     }
 

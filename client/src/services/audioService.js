@@ -3,11 +3,16 @@ class AudioEngine {
   constructor() {
     this.ctx = null;
     this.activeNodes = [];
+    this.activeAlarmOscillators = [];
     this.activeSleepTrack = null;
     this.customAudioPlayer = null;
+    this.alarmChimePlayer = null;
+    this.keepAlivePlayer = null;
     this.alarmInterval = null;
+    this.alarmLoopTimer = null;
     this.masterGain = null;
     this.unlocked = false;
+    this.isAlarmRinging = false;
     this.setupAutoUnlock();
   }
 
@@ -27,12 +32,7 @@ class AudioEngine {
         src.connect(ctx.destination);
         src.start(0);
       }
-      if (!this.keepAlivePlayer) {
-        this.keepAlivePlayer = new Audio('/silence.wav');
-        this.keepAlivePlayer.loop = true;
-        this.keepAlivePlayer.playsInline = true;
-        this.keepAlivePlayer.volume = 0.01;
-      }
+      this.ensureKeepAlivePlayer();
       const playPromise = this.keepAlivePlayer.play();
       if (playPromise !== undefined) {
         await playPromise.catch(err => {
@@ -44,6 +44,31 @@ class AudioEngine {
     } catch (err) {
       console.warn('[AudioEngine] unlockAudio error:', err);
     }
+  }
+
+  ensureKeepAlivePlayer() {
+    if (!this.keepAlivePlayer) {
+      this.keepAlivePlayer = new Audio('/silence.wav');
+      this.keepAlivePlayer.loop = true;
+      this.keepAlivePlayer.playsInline = true;
+      this.keepAlivePlayer.volume = 0.01;
+    }
+    return this.keepAlivePlayer;
+  }
+
+  ensureAlarmChimePlayer(chimeUrl = '/alarm_chime.wav') {
+    if (!this.alarmChimePlayer) {
+      this.alarmChimePlayer = new Audio(chimeUrl);
+      this.alarmChimePlayer.playsInline = true;
+      this.alarmChimePlayer.preload = 'auto';
+    } else {
+      if (this.alarmChimePlayer.src !== chimeUrl && !this.alarmChimePlayer.src.endsWith(chimeUrl)) {
+        this.alarmChimePlayer.src = chimeUrl;
+      }
+    }
+    this.alarmChimePlayer.loop = true;
+    this.alarmChimePlayer.volume = 1.0;
+    return this.alarmChimePlayer;
   }
 
   setupAutoUnlock() {
@@ -63,7 +88,9 @@ class AudioEngine {
           this.unlocked = true;
         }
         // Start background keep-alive on user interaction so iOS/PWA does not suspend in background
-        this.startKeepAlive();
+        if (!this.isAlarmRinging) {
+          this.startKeepAlive();
+        }
       } catch {
         // ignore until next gesture
       }
@@ -337,64 +364,71 @@ class AudioEngine {
   // --- ALARM SOUND GENERATORS ---
 
   async playAlarmSound(soundId = 'gentle_chimes', customUrl = null) {
-    console.log('[AudioEngine] 🎵 playAlarmSound called. Sound ID:', soundId, 'Custom URL:', customUrl);
+    console.log('[AudioEngine] 🔊 STARTING ALARM SOUND. Sound ID:', soundId, 'Custom URL:', customUrl);
+    this.isAlarmRinging = true;
 
-    // Stop any previously playing alarm loops without destroying background keep-alive
-    if (this.alarmInterval) {
-      clearInterval(this.alarmInterval);
-      this.alarmInterval = null;
-    }
-    if (this.alarmLoopTimer) {
-      clearTimeout(this.alarmLoopTimer);
-      this.alarmLoopTimer = null;
-    }
-    if (this.alarmChimePlayer) {
-      try {
-        this.alarmChimePlayer.pause();
-        this.alarmChimePlayer.currentTime = 0;
-      } catch (e) {}
-      this.alarmChimePlayer = null;
-    }
+    // 1. First stop any existing sound cleanly
+    this.stopAlarmSound(false); // don't reset isAlarmRinging flag
 
+    this.isAlarmRinging = true;
+
+    // 2. Ensure AudioContext is initialized and resumed
     const ctx = this.init();
     if (ctx.state === 'suspended') {
       try {
         await ctx.resume();
-        console.log('[AudioEngine] AudioContext resumed, state:', ctx.state);
+        console.log('[AudioEngine] AudioContext resumed for alarm, state:', ctx.state);
       } catch (err) {
         console.warn('[AudioEngine] Could not resume AudioContext directly:', err);
       }
     }
 
-    // Always play /alarm_chime.wav at full volume in a loop while app is open
+    // 3. Play HTML5 audio chime using the single persistent player instance
     const chimeUrl = customUrl || '/alarm_chime.wav';
     try {
-      this.alarmChimePlayer = new Audio(chimeUrl);
-      this.alarmChimePlayer.loop = true;
-      this.alarmChimePlayer.volume = 1.0;
-      this.alarmChimePlayer.playsInline = true;
-      const playPromise = this.alarmChimePlayer.play();
+      const player = this.ensureAlarmChimePlayer(chimeUrl);
+      player.currentTime = 0;
+      player.loop = true;
+      player.volume = 1.0;
+      const playPromise = player.play();
       if (playPromise !== undefined) {
         playPromise.then(() => {
-          console.log('[AudioEngine] 🔊 HTML5 alarm chime audio playing loudly from:', chimeUrl);
+          console.log('[AudioEngine] 🔊 HTML5 alarm chime audio successfully playing loudly from:', chimeUrl);
         }).catch(err => {
-          console.warn('[AudioEngine] Direct HTML5 audio play failed (autoplay policy), falling back to WebAudio synth:', err);
-          this.startChimeLoop(soundId);
+          console.warn('[AudioEngine] Direct HTML5 audio play rejected (autoplay policy), fallback to WebAudio synth:', err);
         });
       }
     } catch (e) {
-      console.warn('[AudioEngine] Failed to initialize HTML5 Audio player:', e);
-      this.startChimeLoop(soundId);
+      console.warn('[AudioEngine] Failed to play HTML5 Audio player:', e);
     }
 
-    // Also run Web Audio chime loop as supplementary/fallback synthesizer
+    // 4. Update MediaSession to show Alarm Ringing!
+    if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.metadata = new MediaMetadata({
+          title: '⏰ Alarm Ringing!',
+          artist: 'AuraAlarm Wake-Up Call',
+          album: 'AuraAlarm Smart Clock'
+        });
+        navigator.mediaSession.playbackState = 'playing';
+      } catch (e) {}
+    }
+
+    // 5. Also start Web Audio synthesized chime loop
     this.startChimeLoop(soundId);
   }
 
   startChimeLoop(soundId) {
     console.log('[AudioEngine] 🎶 Starting Web Audio synthesizer chime loop for soundId:', soundId);
+    
+    // Clear any previous interval before creating a new one
+    if (this.alarmInterval) {
+      clearInterval(this.alarmInterval);
+      this.alarmInterval = null;
+    }
+
     const playChimeSequence = () => {
-      if (!this.ctx) return;
+      if (!this.ctx || !this.isAlarmRinging) return;
       const ctx = this.ctx;
       const now = ctx.currentTime;
 
@@ -406,32 +440,48 @@ class AudioEngine {
       }
 
       notes.forEach((freq, idx) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
+        if (!this.isAlarmRinging) return;
+        try {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
 
-        osc.type = soundId === 'zen_bell' ? 'triangle' : 'sine';
-        osc.frequency.setValueAtTime(freq, now + idx * 0.25);
+          osc.type = soundId === 'zen_bell' ? 'triangle' : 'sine';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.25);
 
-        gain.gain.setValueAtTime(0, now + idx * 0.25);
-        gain.gain.linearRampToValueAtTime(0.35, now + idx * 0.25 + 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.25 + 1.4);
+          gain.gain.setValueAtTime(0, now + idx * 0.25);
+          gain.gain.linearRampToValueAtTime(0.35, now + idx * 0.25 + 0.05);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.25 + 1.4);
 
-        osc.connect(gain);
-        gain.connect(this.masterGain);
+          osc.connect(gain);
+          gain.connect(this.masterGain);
 
-        osc.start(now + idx * 0.25);
-        osc.stop(now + idx * 0.25 + 1.5);
+          osc.start(now + idx * 0.25);
+          osc.stop(now + idx * 0.25 + 1.5);
+
+          this.activeAlarmOscillators.push(osc, gain);
+          // Auto remove after note completes
+          setTimeout(() => {
+            const oscIdx = this.activeAlarmOscillators.indexOf(osc);
+            if (oscIdx > -1) this.activeAlarmOscillators.splice(oscIdx, 1);
+            const gIdx = this.activeAlarmOscillators.indexOf(gain);
+            if (gIdx > -1) this.activeAlarmOscillators.splice(gIdx, 1);
+          }, 1600);
+        } catch (e) {}
       });
     };
 
-    // Play immediately and repeat every 3 seconds
+    // Play immediately and repeat every 2.8 seconds
     playChimeSequence();
     this.alarmInterval = setInterval(playChimeSequence, 2800);
   }
 
-  stopAlarmSound() {
-    console.log('[AudioEngine] ⏹️ stopAlarmSound called: stopping all audible alarm chimes.');
-    // 1. Clear all timers and loops first
+  stopAlarmSound(resetState = true) {
+    console.log('[AudioEngine] ⏹️ STOPPING ALARM SOUND. stopAlarmSound called.');
+    if (resetState) {
+      this.isAlarmRinging = false;
+    }
+
+    // 1. Clear all intervals and timers immediately
     if (this.alarmInterval) {
       clearInterval(this.alarmInterval);
       this.alarmInterval = null;
@@ -441,78 +491,73 @@ class AudioEngine {
       this.alarmLoopTimer = null;
     }
 
-    // 2. Pause alarm chime player and custom audio (do not destroy keepAlivePlayer)
-    const audiosToReset = [this.customAudioPlayer, this.alarmChimePlayer];
-    audiosToReset.forEach(player => {
-      if (player) {
-        try {
-          player.pause();
-          player.loop = false;
-          player.currentTime = 0;
-          player.removeAttribute('src');
-          player.load();
-        } catch (e) {
-          // ignore
-        }
-      }
-    });
-    this.customAudioPlayer = null;
-    this.alarmChimePlayer = null;
-
-    // Restore background keepAlivePlayer to silence if it was transitioned to chime
-    if (this.keepAlivePlayer) {
+    // 2. Stop and silence the single persistent alarm chime player
+    if (this.alarmChimePlayer) {
       try {
-        this.keepAlivePlayer.pause();
-        this.keepAlivePlayer.src = '/silence.wav';
-        this.keepAlivePlayer.volume = 0.01;
-        this.keepAlivePlayer.loop = true;
+        this.alarmChimePlayer.pause();
+        this.alarmChimePlayer.loop = false;
+        this.alarmChimePlayer.currentTime = 0;
       } catch (e) {
-        // ignore
+        console.warn('[AudioEngine] Error pausing alarmChimePlayer:', e);
       }
     }
 
-    // 3. Stop all Web Audio active nodes (keep AudioContext running so future alarms can play instantly)
-    if (Array.isArray(this.activeNodes)) {
-      this.activeNodes.forEach(node => {
+    // Also stop customAudioPlayer if any
+    if (this.customAudioPlayer) {
+      try {
+        this.customAudioPlayer.pause();
+        this.customAudioPlayer.loop = false;
+        this.customAudioPlayer.currentTime = 0;
+      } catch (e) {}
+    }
+
+    // 3. Stop and disconnect all active alarm synthesizer oscillators and gain nodes
+    if (Array.isArray(this.activeAlarmOscillators)) {
+      this.activeAlarmOscillators.forEach(node => {
         try {
           if (typeof node.stop === 'function') node.stop();
           if (typeof node.disconnect === 'function') node.disconnect();
-        } catch (e) {
-          // ignore
-        }
+        } catch (e) {}
       });
-      this.activeNodes = [];
+      this.activeAlarmOscillators = [];
     }
 
-    // 4. Cancel speech synthesis
+    // 4. Ensure keepAlivePlayer is NOT playing alarm chime; revert to silent audio or pause
+    if (this.keepAlivePlayer) {
+      try {
+        this.keepAlivePlayer.pause();
+        this.keepAlivePlayer.currentTime = 0;
+        this.keepAlivePlayer.loop = true;
+        this.keepAlivePlayer.volume = 0.01;
+        if (!this.keepAlivePlayer.src.endsWith('/silence.wav')) {
+          this.keepAlivePlayer.src = '/silence.wav';
+        }
+      } catch (e) {}
+    }
+
+    // 5. Cancel speech synthesis
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
 
-    // 5. Stop vibration
+    // 6. Stop vibration
     if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
       try {
         navigator.vibrate(0);
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
 
-    // 6. Clear mediaSession (playbackState 'none', metadata null)
+    // 7. Clear mediaSession (set state 'none' and clear metadata)
     if (typeof navigator !== 'undefined' && 'mediaSession' in navigator) {
       try {
         navigator.mediaSession.playbackState = 'none';
         navigator.mediaSession.metadata = null;
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
 
-    // 7. Close open notifications via registration.getNotifications()
+    // 8. Close open notifications
     if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
       try {
         navigator.serviceWorker.getRegistration().then(reg => {
@@ -526,25 +571,25 @@ class AudioEngine {
             }).catch(() => {});
           }
         }).catch(() => {});
-      } catch (e) {
-        // ignore
-      }
+      } catch (e) {}
     }
+
+    console.log('[AudioEngine] ⏹️ All alarm audio, oscillators, intervals, and notifications successfully terminated.');
   }
 
   // --- BACKGROUND KEEP-ALIVE (iOS PWA & Web Background Timer) ---
+  // The keep-alive is strictly silent and NEVER plays the alarm ringing sound.
   startKeepAlive(description = 'Alarm active and standing by') {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || this.isAlarmRinging) return;
     try {
-      console.log('[AudioEngine] 🛡️ startKeepAlive active for:', description);
-      if (!this.keepAlivePlayer) {
-        this.keepAlivePlayer = new Audio('/silence.wav');
-        this.keepAlivePlayer.loop = true;
-        this.keepAlivePlayer.playsInline = true;
-        this.keepAlivePlayer.volume = 0.01;
+      const player = this.ensureKeepAlivePlayer();
+      player.volume = 0.01;
+      player.loop = true;
+      if (!player.src.endsWith('/silence.wav')) {
+        player.src = '/silence.wav';
       }
-      this.keepAlivePlayer.play().then(() => {
-        if ('mediaSession' in navigator) {
+      player.play().then(() => {
+        if ('mediaSession' in navigator && !this.isAlarmRinging) {
           navigator.mediaSession.metadata = new MediaMetadata({
             title: 'AuraAlarm Standing By',
             artist: description,
@@ -553,59 +598,24 @@ class AudioEngine {
           navigator.mediaSession.playbackState = 'playing';
         }
       }).catch(() => {
-        // Audio playback requires user interaction, will trigger on next click
+        // Audio playback requires user interaction
       });
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
   }
 
-  // Switch keep-alive to audible ringing chime so background audio session sounds loudly
+  // Trigger loud chime when backgrounded (delegates to playAlarmSound)
   triggerBackgroundAudibleChime() {
-    if (typeof window === 'undefined') return;
-    console.log('[AudioEngine] 🚨 triggerBackgroundAudibleChime triggered');
-    try {
-      if (this.keepAlivePlayer) {
-        this.keepAlivePlayer.pause();
-        this.keepAlivePlayer.src = '/alarm_chime.wav';
-        this.keepAlivePlayer.loop = true;
-        this.keepAlivePlayer.volume = 1.0;
-        this.keepAlivePlayer.play().then(() => {
-          console.log('[AudioEngine] 🔊 Background keepAlivePlayer successfully switched to audible chime');
-        }).catch((e) => {
-          console.warn('[AudioEngine] Background chime play notice:', e);
-        });
-        if ('mediaSession' in navigator) {
-          navigator.mediaSession.metadata = new MediaMetadata({
-            title: '⏰ Alarm Ringing!',
-            artist: 'Tap to open AuraAlarm',
-            album: 'AuraAlarm Smart Clock'
-          });
-          navigator.mediaSession.playbackState = 'playing';
-        }
-      } else {
-        const audio = new Audio('/alarm_chime.wav');
-        audio.loop = true;
-        audio.volume = 1.0;
-        audio.play().then(() => {
-          console.log('[AudioEngine] 🔊 Direct chime audio playing');
-        }).catch((e) => {
-          console.warn('[AudioEngine] Direct chime play notice:', e);
-        });
-        this.keepAlivePlayer = audio;
-      }
-    } catch (e) {
-      console.warn('triggerBackgroundAudibleChime error:', e);
-    }
+    console.log('[AudioEngine] 🚨 triggerBackgroundAudibleChime requested');
+    // Ensure the chime player is playing /alarm_chime.wav directly
+    this.playAlarmSound('gentle_chimes', '/alarm_chime.wav');
   }
 
   stopKeepAlive() {
     if (this.keepAlivePlayer) {
       try {
         this.keepAlivePlayer.pause();
-      } catch (e) {
-        // ignore
-      }
+        this.keepAlivePlayer.currentTime = 0;
+      } catch (e) {}
     }
   }
 }

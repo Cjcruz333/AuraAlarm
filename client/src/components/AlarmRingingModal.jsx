@@ -26,6 +26,18 @@ export const AlarmRingingModal = () => {
     };
   }, [ringingAlarm]);
 
+  const handleDismiss = () => {
+    console.log('[AlarmRingingModal] 🛑 Dismiss button clicked by user');
+    audioEngine.stopAlarmSound();
+    dismissAlarm();
+  };
+
+  const handleSnooze = () => {
+    console.log('[AlarmRingingModal] 🛑 Snooze button clicked by user');
+    audioEngine.stopAlarmSound();
+    snoozeAlarm();
+  };
+
   if (!ringingAlarm) return null;
 
   // Priority: alarm specific photo > user loved one photo > default serene portrait
@@ -121,7 +133,7 @@ export const AlarmRingingModal = () => {
         {/* Action Controls: Snooze & Dismiss */}
         <div className="grid grid-cols-2 gap-3.5 w-full">
           <button
-            onClick={snoozeAlarm}
+            onClick={handleSnooze}
             className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 text-sm font-semibold border border-slate-700 transition duration-200 active:scale-95 shadow-lg"
           >
             <Moon className="w-4 h-4 text-slate-400" />
@@ -129,7 +141,7 @@ export const AlarmRingingModal = () => {
           </button>
 
           <button
-            onClick={dismissAlarm}
+            onClick={handleDismiss}
             className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-sm font-bold shadow-lg shadow-indigo-600/30 transition duration-200 active:scale-95"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
