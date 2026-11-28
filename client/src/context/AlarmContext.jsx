@@ -3,6 +3,7 @@ import { api } from '../services/api.js';
 import { audioEngine } from '../services/audioService.js';
 import { speechService } from '../services/speechService.js';
 import { notificationService } from '../services/notificationService.js';
+import { alarmLogService } from '../services/alarmLogService.js';
 import confetti from 'canvas-confetti';
 import { useAuth } from './AuthContext.jsx';
 import { useSettings } from './SettingsContext.jsx';
@@ -320,6 +321,15 @@ export const AlarmProvider = ({ children }) => {
 
     console.log(`[AlarmContext] 🔔 triggerAlarm called for: "${alarm.label}" at ${alarm.time}`);
     setRingingAlarm(alarm);
+    
+    // Log alarm trigger event to localStorage history
+    alarmLogService.logTrigger({
+      alarmId: alarm.id,
+      scheduledTime: alarm.time,
+      label: alarm.label,
+      soundStatus: audioEngine.audioState || 'playing'
+    });
+
     // 1. Play the actual alarm sound (HTML5 single audio player + WebAudio synth fallback)
     audioEngine.playAlarmSound(alarm.soundId || 'gentle_chimes', api.resolveAssetUrl(alarm.customSoundUrl));
 
@@ -346,6 +356,7 @@ export const AlarmProvider = ({ children }) => {
   // Snooze Alarm
   const snoozeAlarm = () => {
     console.log('[AlarmContext] 🌙 snoozeAlarm triggered');
+    alarmLogService.logAction('snoozed');
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
@@ -369,6 +380,7 @@ export const AlarmProvider = ({ children }) => {
   // Dismiss Alarm
   const dismissAlarm = async () => {
     console.log('[AlarmContext] ☀️ dismissAlarm triggered');
+    alarmLogService.logAction('dismissed');
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');

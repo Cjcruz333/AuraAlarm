@@ -18,12 +18,17 @@ import {
   X,
   Gift,
   Timer,
-  Settings
+  Settings,
+  History,
+  CheckCircle,
+  AlertTriangle,
+  XCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useAlarm } from '../context/AlarmContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { nativeAlarmService } from '../services/nativeAlarm.js';
+import { alarmLogService } from '../services/alarmLogService.js';
 import { api } from '../services/api.js';
 
 export const Navbar = ({ 
@@ -40,6 +45,13 @@ export const Navbar = ({
   const { currentTime } = useAlarm();
   const { t, locale, formatTime } = useSettings();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAlarmHistory, setShowAlarmHistory] = useState(false);
+  const [alarmLogs, setAlarmLogs] = useState([]);
+
+  const handleOpenAlarmHistory = () => {
+    setAlarmLogs(alarmLogService.getLogs());
+    setShowAlarmHistory(prev => !prev);
+  };
 
   const formattedTime = formatTime(currentTime);
 
@@ -302,7 +314,7 @@ export const Navbar = ({
             </button>
 
             {isMobileMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-700 bg-slate-950 p-2 shadow-2xl z-50">
+              <div className="absolute right-0 top-full mt-2 w-72 max-h-[85vh] overflow-y-auto rounded-2xl border border-slate-700 bg-slate-950 p-2.5 shadow-2xl z-50">
                 {showAndroidDownload && (
                   <a
                     href="/auraalarm.apk"
@@ -312,6 +324,66 @@ export const Navbar = ({
                   >
                     <Smartphone className="w-4 h-4 text-indigo-400" /> Download Android App
                   </a>
+                )}
+
+                {/* Alarm History / Overnight Test Log Toggle */}
+                <button
+                  onClick={handleOpenAlarmHistory}
+                  className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-indigo-300 bg-indigo-950/40 hover:bg-indigo-900/50 border border-indigo-500/30 transition-colors"
+                >
+                  <span className="flex items-center gap-2.5">
+                    <History className="w-4 h-4 text-indigo-400" />
+                    <span>Alarm History Log</span>
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 font-mono">
+                    {showAlarmHistory ? 'Hide' : 'View (10)'}
+                  </span>
+                </button>
+
+                {/* Expandable Alarm History Records */}
+                {showAlarmHistory && (
+                  <div className="my-2 p-2 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs">
+                    <div className="flex items-center justify-between pb-1 border-b border-slate-800 text-[11px] font-semibold text-slate-400">
+                      <span>Recent Alarms</span>
+                      <button
+                        onClick={() => { alarmLogService.clearLogs(); setAlarmLogs([]); }}
+                        className="text-[10px] text-slate-500 hover:text-rose-400"
+                      >
+                        Clear
+                      </button>
+                    </div>
+
+                    {alarmLogs.length === 0 ? (
+                      <p className="text-[11px] text-slate-400 text-center py-2 italic">
+                        No alarm triggers logged yet. Alarms will record here when fired.
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                        {alarmLogs.map(log => (
+                          <div key={log.id} className="p-2 rounded-lg bg-slate-950/80 border border-slate-800/80">
+                            <div className="flex items-center justify-between font-mono font-bold text-white text-[11px]">
+                              <span>⏰ Set: {log.scheduledTime}</span>
+                              <span className="text-slate-400 text-[10px] font-normal">{log.firedDate}</span>
+                            </div>
+                            <div className="flex items-center justify-between mt-1 text-[10px] text-slate-300">
+                              <span>Fired: <strong className="text-indigo-300">{log.firedAt}</strong></span>
+                              <span className={`px-1.5 py-0.2 rounded font-semibold ${
+                                log.soundStatus === 'playing' ? 'bg-emerald-500/20 text-emerald-300' : 'bg-amber-500/20 text-amber-300'
+                              }`}>
+                                {log.soundStatus === 'playing' ? 'Sound: OK' : 'Sound: Blocked'}
+                              </span>
+                            </div>
+                            <div className="mt-1 flex items-center justify-between text-[10px] text-slate-400">
+                              <span>Action: <strong className={log.action === 'dismissed' ? 'text-emerald-400' : log.action === 'snoozed' ? 'text-amber-400' : 'text-slate-300'}>
+                                {log.action.toUpperCase()}
+                              </strong></span>
+                              {log.actionTime && <span>at {log.actionTime}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
                 <button
                   onClick={() => { setActiveTab('stats'); setIsMobileMenuOpen(false); }}

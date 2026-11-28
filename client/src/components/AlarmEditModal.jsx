@@ -28,6 +28,13 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingAudio, setUploadingAudio] = useState(false);
 
+  // Detect iOS (iPhone / iPad) to show reliability note
+  const isIOS = (() => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  })();
+
   const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   const builtInSounds = [
@@ -338,6 +345,16 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
           
           {/* Scrollable Form Content */}
           <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-6 py-5 space-y-5">
+
+            {/* iOS Reliability Notice */}
+            {isIOS && (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs flex items-start gap-2.5 shadow-sm">
+                <span className="text-base leading-none">📱</span>
+                <p className="font-medium leading-relaxed">
+                  For the most reliable wake-up, keep this page open, keep your phone charging, and turn your volume up.
+                </p>
+              </div>
+            )}
 
             {/* ULTRA PROMINENT DIGITAL TIME CONSOLE */}
             {clockFormat === '12h' ? (
