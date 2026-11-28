@@ -14,12 +14,12 @@
     "redirects": [
       {
         "source": "/auraalarm.apk",
-        "destination": "https://github.com/Cjcruz333/AuraAlarm/raw/main/client/public/auraalarm.apk",
+        "destination": "https://auraalarm.onrender.com/auraalarm.apk",
         "type": 302
       },
       {
         "source": "/download/app",
-        "destination": "https://github.com/Cjcruz333/AuraAlarm/raw/main/client/public/auraalarm.apk",
+        "destination": "https://auraalarm.onrender.com/auraalarm.apk",
         "type": 302
       }
     ],
