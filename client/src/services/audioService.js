@@ -13,7 +13,28 @@ class AudioEngine {
     this.masterGain = null;
     this.unlocked = false;
     this.isAlarmRinging = false;
+    this.audioState = 'idle'; // 'idle' | 'playing' | 'blocked' | 'error' | 'stopped'
+    this.audioStateListeners = [];
     this.setupAutoUnlock();
+  }
+
+  onAudioStateChange(fn) {
+    if (typeof fn === 'function') {
+      this.audioStateListeners.push(fn);
+      fn(this.audioState);
+      return () => {
+        this.audioStateListeners = this.audioStateListeners.filter(l => l !== fn);
+      };
+    }
+    return () => {};
+  }
+
+  setAudioState(state, detail = '') {
+    console.log(`[AudioEngine] 📢 Audio State: ${state} ${detail ? '(' + detail + ')' : ''}`);
+    this.audioState = state;
+    this.audioStateListeners.forEach(listener => {
+      try { listener(state, detail); } catch (e) {}
+    });
   }
 
   // Explicitly unlock audio from a user click gesture (e.g., Set Alarm / Save Alarm)
@@ -32,6 +53,20 @@ class AudioEngine {
         src.connect(ctx.destination);
         src.start(0);
       }
+      // Also prime alarm chime player on user gesture so iOS allows it later
+      const chime = this.ensureAlarmChimePlayer('/alarm_chime.wav');
+      chime.volume = 0;
+      const primePromise = chime.play();
+      if (primePromise !== undefined) {
+        primePromise.then(() => {
+          chime.pause();
+          chime.currentTime = 0;
+          chime.volume = 1.0;
+        }).catch(() => {
+          chime.volume = 1.0;
+        });
+      }
+
       this.ensureKeepAlivePlayer();
       const playPromise = this.keepAlivePlayer.play();
       if (playPromise !== undefined) {
@@ -66,6 +101,7 @@ class AudioEngine {
         this.alarmChimePlayer.src = chimeUrl;
       }
     }
+    this.alarmChimePlayer.muted = false;
     this.alarmChimePlayer.loop = true;
     this.alarmChimePlayer.volume = 1.0;
     return this.alarmChimePlayer;
@@ -366,11 +402,17 @@ class AudioEngine {
   async playAlarmSound(soundId = 'gentle_chimes', customUrl = null) {
     console.log('[AudioEngine] 🔊 STARTING ALARM SOUND. Sound ID:', soundId, 'Custom URL:', customUrl);
     this.isAlarmRinging = true;
+    this.setAudioState('playing', 'Starting audio...');
 
-    // 1. First stop any existing sound cleanly
-    this.stopAlarmSound(false); // don't reset isAlarmRinging flag
-
-    this.isAlarmRinging = true;
+    // 1. First stop any existing interval loops without resetting isAlarmRinging
+    if (this.alarmInterval) {
+      clearInterval(this.alarmInterval);
+      this.alarmInterval = null;
+    }
+    if (this.alarmLoopTimer) {
+      clearTimeout(this.alarmLoopTimer);
+      this.alarmLoopTimer = null;
+    }
 
     // 2. Ensure AudioContext is initialized and resumed
     const ctx = this.init();
@@ -379,27 +421,39 @@ class AudioEngine {
         await ctx.resume();
         console.log('[AudioEngine] AudioContext resumed for alarm, state:', ctx.state);
       } catch (err) {
-        console.warn('[AudioEngine] Could not resume AudioContext directly:', err);
+        console.error('[AudioEngine] AudioContext resume failed:', err);
       }
     }
+
+    let html5Success = false;
 
     // 3. Play HTML5 audio chime using the single persistent player instance
     const chimeUrl = customUrl || '/alarm_chime.wav';
     try {
       const player = this.ensureAlarmChimePlayer(chimeUrl);
-      player.currentTime = 0;
-      player.loop = true;
+      player.muted = false;
       player.volume = 1.0;
+      player.loop = true;
+      player.currentTime = 0;
+
       const playPromise = player.play();
       if (playPromise !== undefined) {
-        playPromise.then(() => {
+        await playPromise.then(() => {
+          html5Success = true;
+          this.setAudioState('playing', 'HTML5 Audio chime playing loudly');
           console.log('[AudioEngine] 🔊 HTML5 alarm chime audio successfully playing loudly from:', chimeUrl);
         }).catch(err => {
-          console.warn('[AudioEngine] Direct HTML5 audio play rejected (autoplay policy), fallback to WebAudio synth:', err);
+          console.error('[AudioEngine] Direct HTML5 audio play rejected (e.g. iOS autoplay policy):', err.name, err.message);
+          if (err.name === 'NotAllowedError') {
+            this.setAudioState('blocked', 'Autoplay blocked by iOS Safari');
+          } else {
+            this.setAudioState('error', `${err.name}: ${err.message}`);
+          }
         });
       }
     } catch (e) {
-      console.warn('[AudioEngine] Failed to play HTML5 Audio player:', e);
+      console.error('[AudioEngine] Failed to play HTML5 Audio player:', e);
+      this.setAudioState('error', e.message || 'HTML5 player failure');
     }
 
     // 4. Update MediaSession to show Alarm Ringing!
@@ -414,8 +468,18 @@ class AudioEngine {
       } catch (e) {}
     }
 
-    // 5. Also start Web Audio synthesized chime loop
-    this.startChimeLoop(soundId);
+    // 5. Run Web Audio chime loop (synthesizer) simultaneously
+    try {
+      this.startChimeLoop(soundId);
+      if (ctx.state === 'running') {
+        if (!html5Success && this.audioState === 'blocked') {
+          // If WebAudio is running, Web Audio synth IS sounding!
+          this.setAudioState('playing', 'Web Audio synthesizer playing');
+        }
+      }
+    } catch (synthErr) {
+      console.error('[AudioEngine] Web Audio chime loop start failed:', synthErr);
+    }
   }
 
   startChimeLoop(soundId) {
@@ -479,6 +543,7 @@ class AudioEngine {
     console.log('[AudioEngine] ⏹️ STOPPING ALARM SOUND. stopAlarmSound called.');
     if (resetState) {
       this.isAlarmRinging = false;
+      this.setAudioState('stopped', 'Alarm sound stopped');
     }
 
     // 1. Clear all intervals and timers immediately

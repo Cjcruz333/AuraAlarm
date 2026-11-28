@@ -12,18 +12,20 @@ export const AlarmRingingModal = () => {
   const { user } = useAuth();
   const { t, formatTime, snoozeDurationMinutes } = useSettings();
   const [greeting, setGreeting] = useState('');
+  const [audioStatus, setAudioStatus] = useState({ state: audioEngine.audioState, detail: '' });
+
+  useEffect(() => {
+    const unsubscribe = audioEngine.onAudioStateChange((state, detail) => {
+      setAudioStatus({ state, detail });
+    });
+    return unsubscribe;
+  }, []);
 
   useEffect(() => {
     if (ringingAlarm) {
       const timeGreeting = speechService.getTimeBasedGreeting();
       setGreeting(timeGreeting);
-    } else {
-      // Ensure all audio is stopped when modal closes
-      audioEngine.stopAlarmSound();
     }
-    return () => {
-      audioEngine.stopAlarmSound();
-    };
   }, [ringingAlarm]);
 
   const handleDismiss = () => {
@@ -36,6 +38,14 @@ export const AlarmRingingModal = () => {
     console.log('[AlarmRingingModal] 🛑 Snooze button clicked by user');
     audioEngine.stopAlarmSound();
     snoozeAlarm();
+  };
+
+  const handleManualPlay = () => {
+    console.log('[AlarmRingingModal] 👆 User tapped "TAP TO START SOUND" fallback');
+    audioEngine.unlockAudio();
+    if (ringingAlarm) {
+      audioEngine.playAlarmSound(ringingAlarm.soundId || 'gentle_chimes', api.resolveAssetUrl(ringingAlarm.customSoundUrl));
+    }
   };
 
   if (!ringingAlarm) return null;
@@ -109,6 +119,36 @@ export const AlarmRingingModal = () => {
               </span>
             </div>
           </div>
+        </div>
+
+        {/* Big Fallback Button if browser blocked audio */}
+        {(audioStatus.state === 'blocked' || audioStatus.state === 'error') && (
+          <button
+            onClick={handleManualPlay}
+            className="w-full mb-4 py-3.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30 animate-pulse border-2 border-amber-300 transition-all active:scale-95"
+          >
+            <Volume2 className="w-5 h-5 text-slate-950 animate-bounce" />
+            <span>🔊 TAP TO START SOUND</span>
+          </button>
+        )}
+
+        {/* Visible On-Screen Debug Status Line */}
+        <div className="w-full mb-4 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-700/60 text-[11px] font-mono flex items-center justify-between text-slate-300">
+          <span className="flex items-center gap-1.5">
+            <span className={`w-2 h-2 rounded-full ${
+              audioStatus.state === 'playing' ? 'bg-emerald-400 animate-ping' :
+              audioStatus.state === 'blocked' ? 'bg-amber-400 animate-pulse' :
+              audioStatus.state === 'error' ? 'bg-red-400' : 'bg-slate-500'
+            }`} />
+            <span>Audio: <strong className={
+              audioStatus.state === 'playing' ? 'text-emerald-400' :
+              audioStatus.state === 'blocked' ? 'text-amber-300' :
+              audioStatus.state === 'error' ? 'text-red-400' : 'text-slate-400'
+            }>{audioStatus.state.toUpperCase()}</strong></span>
+          </span>
+          <span className="text-[10px] text-slate-400 truncate max-w-[200px]" title={audioStatus.detail}>
+            {audioStatus.detail || (audioStatus.state === 'playing' ? 'Ringing loudly' : 'Standing by')}
+          </span>
         </div>
 
         {/* Loved One Personalized Message */}
