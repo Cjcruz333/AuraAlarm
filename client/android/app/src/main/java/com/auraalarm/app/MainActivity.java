@@ -7,7 +7,8 @@ import com.getcapacitor.BridgeActivity;
 
 public class MainActivity extends BridgeActivity {
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState) {
+        registerPlugin(NativeAlarmPlugin.class);
         super.onCreate(savedInstanceState);
 
         // Allow app to turn on screen and show over lock screen when alarm rings

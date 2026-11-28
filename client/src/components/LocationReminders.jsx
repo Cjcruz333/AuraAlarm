@@ -6,7 +6,6 @@ import {
   Trash2, 
   Volume2, 
   ShieldCheck, 
-  Calendar, 
   LocateFixed, 
   BellRing,
   Lock
@@ -14,7 +13,7 @@ import {
 import { api } from '../services/api.js';
 import { cryptoService } from '../services/cryptoService.js';
 
-export const LocationReminders = ({ onOpenCalendar }) => {
+export const LocationReminders = () => {
   const [reminders, setReminders] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [title, setTitle] = useState('');
@@ -133,14 +132,6 @@ export const LocationReminders = ({ onOpenCalendar }) => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={onOpenCalendar}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-all shadow-sm"
-          >
-            <Calendar className="w-4 h-4 text-indigo-400" />
-            <span>Export to Calendar (.ics)</span>
-          </button>
-
           <button
             onClick={() => setIsAdding(!isAdding)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-lg shadow-indigo-600/30 transition-all active:scale-95"

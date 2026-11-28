@@ -219,7 +219,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
   const plans = [
     {
       id: 'pro_monthly',
-      name: 'Aura Pro Monthly',
+      name: 'VIP Monthly',
       tagline: 'Individual Circadian & Sleep Master',
       baseUSD: 3.99,
       period: '/ month',
@@ -242,11 +242,10 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
       badge: 'MOST POPULAR',
       highlight: true,
       features: [
-        'Everything in Aura Pro for 2 Linked Devices',
+        'Everything in VIP for 2 Linked Devices',
         'Automated Morning Wake-Up Companion Pings',
         'Live "Arrived Safely" Proximity Beacon',
         'Shared Daily Wake Streak & Inspiration Notes',
-        'Multi-Calendar .ics Universal Synchronization',
         'Direct Priority Support with Developer'
       ]
     },
@@ -509,7 +508,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                 <span>OFFICIAL MONETIZATION & VERIFIED VIP PASS</span>
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-                Upgrade to AuraAlarm Pro
+                Upgrade to AuraAlarm VIP
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 mt-1">
                 Unlock 528Hz sleep frequencies, couples companion pings, and worldwide circadian alarms.
@@ -547,7 +546,7 @@ export const UpgradeProModal = ({ isOpen, onClose, onOpenAdmin }) => {
                   </p>
                   <p className="text-xs text-emerald-200/70 mt-0.5">
                     {trialDaysLeft === 0
-                      ? 'Your trial expires today — subscribe now to keep all Pro features.'
+                      ? 'Your trial expires today — subscribe now to keep all VIP features.'
                       : `${trialDaysLeft} day${trialDaysLeft !== 1 ? 's' : ''} remaining${trialEndsAt ? ` · Expires ${new Date(trialEndsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}`
                     }
                   </p>

@@ -138,7 +138,7 @@ export const SocialShareModal = ({ isOpen, onClose, onOpenUpgrade }) => {
       ctx.fillStyle = selectedSkin === 'gold' ? '#f59e0b' : '#818cf8';
       ctx.font = 'bold 28px "Plus Jakarta Sans", sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(isVip ? '👑 AURA PRO VIP FOUNDER • DAILY WAKE STREAK' : '🔥 DAILY WAKE STREAK • AURAALARM', 600, 120);
+      ctx.fillText(isVip ? '👑 VIP FOUNDER • DAILY WAKE STREAK' : '🔥 DAILY WAKE STREAK • AURAALARM', 600, 120);
 
       // Main Streak Count
       ctx.fillStyle = '#ffffff';
@@ -287,7 +287,7 @@ export const SocialShareModal = ({ isOpen, onClose, onOpenUpgrade }) => {
           {/* Top Pill */}
           <div className={`inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider mb-4 border shadow-sm ${currentSkin.tagBg}`}>
             <Crown className="w-4 h-4 fill-current text-amber-400" />
-            <span>{isVip ? '👑 AURA PRO VIP FOUNDER' : '🔥 DAILY WAKE STREAK'}</span>
+            <span>{isVip ? '👑 VIP FOUNDER' : '🔥 DAILY WAKE STREAK'}</span>
           </div>
 
           {/* Huge Golden Streak Days */}

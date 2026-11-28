@@ -293,7 +293,7 @@ export const AdminProofModal = ({ isOpen, isAdmin, onClose }) => {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800/80">
                     <div>
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-bold text-white">{item.planName || 'Aura Pro'}</span>
+                        <span className="text-sm font-bold text-white">{item.planName || 'VIP'}</span>
                         <span className="text-xs font-mono font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/30">
                           {item.currency} {item.amount}
                         </span>

@@ -13,12 +13,12 @@ import {
   Volume2,
   Crown,
   Shield,
-  Mail,
-  Calendar
+  Mail
 } from 'lucide-react';
 import { useAuth } from './context/AuthContext.jsx';
 import { useAlarm } from './context/AlarmContext.jsx';
 import { api } from './services/api.js';
+import { audioEngine } from './services/audioService.js';
 import { trackAlarmCreated, trackAppSection, trackPageView } from './services/analytics.js';
 
 // Components
@@ -32,7 +32,6 @@ import { LocationReminders } from './components/LocationReminders.jsx';
 import { DashboardStats } from './components/DashboardStats.jsx';
 import { LovedOnePeaceOfMind } from './components/LovedOnePeaceOfMind.jsx';
 import { BiometricAuthModal } from './components/BiometricAuthModal.jsx';
-import { CalendarExportModal } from './components/CalendarExportModal.jsx';
 import { FeedbackSupportModal } from './components/FeedbackSupportModal.jsx';
 import { SocialShareModal } from './components/SocialShareModal.jsx';
 import { InstallAppModal } from './components/InstallAppModal.jsx';
@@ -43,6 +42,8 @@ import { ReferralRewards } from './components/ReferralRewards.jsx';
 import { SettingsPage } from './components/SettingsPage.jsx';
 import { notificationService } from './services/notificationService.js';
 import { Stopwatch } from './components/Stopwatch.jsx';
+import { AndroidAlarmPermissionModal } from './components/AndroidAlarmPermissionModal.jsx';
+import { nativeAlarmService } from './services/nativeAlarm.js';
 import { useSettings } from './context/SettingsContext.jsx';
 
 const getPasswordResetTokenFromHash = () => {
@@ -98,10 +99,25 @@ export default function App() {
   const [alarmToEdit, setAlarmToEdit] = useState(null);
   const [resetToken, setResetToken] = useState(getPasswordResetTokenFromHash);
   const [isBiometricModalOpen, setIsBiometricModalOpen] = useState(() => Boolean(resetToken));
-  const [isCalendarModalOpen, setIsCalendarModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isInstallModalOpen, setIsInstallModalOpen] = useState(false);
+  const [isAndroidPermissionModalOpen, setIsAndroidPermissionModalOpen] = useState(false);
+
+  // Check Android Google Clock permissions on launch
+  useEffect(() => {
+    if (nativeAlarmService.isAndroidNative()) {
+      const hasChecked = localStorage.getItem('aura_android_permissions_prompted');
+      nativeAlarmService.checkPermissions().then(perms => {
+        if (!perms.exactAlarm || !perms.notifications || !perms.batteryOptimization) {
+          if (!hasChecked) {
+            setIsAndroidPermissionModalOpen(true);
+            localStorage.setItem('aura_android_permissions_prompted', 'true');
+          }
+        }
+      });
+    }
+  }, []);
   const [isUpgradeModalOpen, setIsUpgradeModalOpen] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState(() => resetToken ? 'reset' : 'login');
@@ -187,6 +203,7 @@ export default function App() {
 
   // Alarm Handlers
   const handleOpenAddAlarm = () => {
+    audioEngine.unlockAudio();
     if (isPreview) {
       openSubscription();
       return;
@@ -196,6 +213,7 @@ export default function App() {
   };
 
   const handleOpenEditAlarm = (alarm) => {
+    audioEngine.unlockAudio();
     if (isPreview) {
       openSubscription();
       return;
@@ -205,6 +223,7 @@ export default function App() {
   };
 
   const handleSetAlarmForCountry = (countryItem) => {
+    audioEngine.unlockAudio();
     if (isPreview) {
       openSubscription();
       return;
@@ -219,6 +238,8 @@ export default function App() {
   };
 
   const handleSaveAlarm = async (alarmData) => {
+    audioEngine.unlockAudio();
+    console.log('[App] 💾 handleSaveAlarm called with data:', alarmData);
     if (isPreview) {
       openSubscription();
       return;
@@ -226,17 +247,21 @@ export default function App() {
     try {
       if (alarmData.id) {
         await api.updateAlarm(alarmData.id, alarmData);
+        console.log('[App] ✅ Alarm updated successfully:', alarmData.id);
       } else {
         await api.createAlarm(alarmData);
         trackAlarmCreated();
+        console.log('[App] ✅ New alarm created successfully');
       }
       loadAlarms();
     } catch (err) {
-      console.error('Save alarm error:', err);
+      console.error('[App] Save alarm error:', err);
     }
   };
 
   const handleToggleAlarm = async (id) => {
+    audioEngine.unlockAudio();
+    console.log('[App] 🔄 handleToggleAlarm called for alarm ID:', id);
     if (isPreview) {
       openSubscription();
       return;
@@ -321,7 +346,6 @@ export default function App() {
         setActiveTab={setActiveTab}
         onOpenBiometrics={() => openAuth(user ? 'account' : 'login')}
         onOpenFeedback={() => setIsFeedbackModalOpen(true)}
-        onOpenCalendar={() => setIsCalendarModalOpen(true)}
         onOpenShare={handleOpenStreakShare}
         onOpenInstall={() => setIsInstallModalOpen(true)}
         onOpenUpgrade={openSubscription}
@@ -607,7 +631,7 @@ export default function App() {
                   </div>
                   <div>
                     <h4 className="text-sm font-bold text-white flex items-center gap-2">
-                      <span>Unlock Aura Pro & Duo Couples Pass</span>
+                      <span>Unlock VIP & Duo Couples Pass</span>
                       <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
                         From $3.99 / ₦3,000
                       </span>
@@ -684,9 +708,7 @@ export default function App() {
         {activeTab === 'fitness' && <FitnessTracker />}
 
         {/* TAB 4: LOCATION REMINDERS */}
-        {activeTab === 'location' && (
-          <LocationReminders onOpenCalendar={() => setIsCalendarModalOpen(true)} />
-        )}
+        {activeTab === 'location' && <LocationReminders />}
 
         {/* TAB 5: DASHBOARD & STREAKS */}
         {activeTab === 'stats' && (
@@ -728,12 +750,6 @@ export default function App() {
         onResetComplete={handlePasswordResetComplete}
       />
 
-      {/* Calendar Export Modal */}
-      <CalendarExportModal
-        isOpen={isCalendarModalOpen}
-        onClose={() => setIsCalendarModalOpen(false)}
-      />
-
       {/* Feedback & Direct Support Modal (okeke12347@gmail.com) */}
       <FeedbackSupportModal
         isOpen={isFeedbackModalOpen}
@@ -751,6 +767,12 @@ export default function App() {
       <InstallAppModal
         isOpen={isInstallModalOpen}
         onClose={() => setIsInstallModalOpen(false)}
+      />
+
+      {/* Android Google Clock Permissions Onboarding Modal */}
+      <AndroidAlarmPermissionModal
+        isOpen={isAndroidPermissionModalOpen}
+        onClose={() => setIsAndroidPermissionModalOpen(false)}
       />
 
       {/* Direct Monetization & VIP Pro Modal */}
@@ -787,8 +809,8 @@ export default function App() {
           <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
             <button
               onClick={openSubscription}
-              aria-label="Aura Pro VIP"
-              title="Aura Pro VIP"
+              aria-label="VIP"
+              title="VIP"
               className="p-2.5 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-slate-800/80 transition-colors"
             >
               <Crown className="w-5 h-5 fill-amber-400" />
@@ -816,14 +838,6 @@ export default function App() {
               className="p-2.5 rounded-lg text-emerald-400 hover:text-emerald-300 hover:bg-slate-800/80 transition-colors"
             >
               <ShieldCheck className="w-5 h-5" />
-            </button>
-            <button
-              onClick={() => setIsCalendarModalOpen(true)}
-              aria-label="iCal Sync"
-              title="iCal Sync"
-              className="p-2.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/80 transition-colors"
-            >
-              <Calendar className="w-5 h-5" />
             </button>
           </div>
         </div>

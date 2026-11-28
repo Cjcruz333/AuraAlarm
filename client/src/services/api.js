@@ -1,6 +1,6 @@
 // Centralized API Client
 
-const BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL || 'https://auraalarm.onrender.com/api').replace(/\/+$/, '');
 const API_ORIGIN = /^https?:\/\//i.test(BASE_URL) ? new URL(BASE_URL).origin : '';
 
 class ApiService {
@@ -40,8 +40,22 @@ class ApiService {
     try {
       const response = await fetch(`${BASE_URL}${endpoint}`, config);
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(errorData.error || `HTTP error ${response.status}`);
+        let errorMessage = `HTTP error ${response.status}`;
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+          const errorData = await response.json().catch(() => null);
+          if (errorData?.error) errorMessage = errorData.error;
+        } else {
+          const text = await response.text().catch(() => '');
+          if (text.includes('<!doctype') || text.includes('<html')) {
+            errorMessage = 'Server is currently waking up or temporarily unavailable. Please try again in a few moments.';
+          }
+        }
+        throw new Error(errorMessage);
+      }
+      const contentType = response.headers.get('content-type') || '';
+      if (!contentType.includes('application/json')) {
+        throw new Error('Server returned an unexpected response format. Please try again.');
       }
       return await response.json();
     } catch (err) {
@@ -218,28 +232,6 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ latitude, longitude })
     });
-  }
-
-  // --- Calendar ---
-  async getCalendarEvents() {
-    return await this.request('/calendar/events');
-  }
-
-  async createCalendarEvent(data) {
-    return await this.request('/calendar/events', {
-      method: 'POST',
-      body: JSON.stringify(data)
-    });
-  }
-
-  async deleteCalendarEvent(id) {
-    return await this.request(`/calendar/events/${id}`, {
-      method: 'DELETE'
-    });
-  }
-
-  getIcsExportUrl() {
-    return `${BASE_URL}/calendar/export.ics`;
   }
 
   // --- Loved Ones & Peace of Mind ---
