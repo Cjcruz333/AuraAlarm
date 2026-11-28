@@ -1,6 +1,6 @@
 // Service Worker for AuraAlarm Progressive Web App
 
-const CACHE_NAME = 'aura-alarm-v5';
+const CACHE_NAME = 'aura-alarm-v14';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

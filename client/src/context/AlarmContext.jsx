@@ -7,6 +7,27 @@ import confetti from 'canvas-confetti';
 import { useAuth } from './AuthContext.jsx';
 import { useSettings } from './SettingsContext.jsx';
 
+// Robust time normalizer supporting 24h ('06:30', '18:45') and 12h ('6:30 AM', '06:30 PM')
+export const normalizeTime = (t) => {
+  if (!t) return '';
+  const str = String(t).trim();
+  const match = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+  if (match) {
+    let hours = parseInt(match[1], 10);
+    const minutes = match[2];
+    const modifier = match[3] ? match[3].toUpperCase() : null;
+
+    if (modifier === 'PM' && hours < 12) {
+      hours += 12;
+    } else if (modifier === 'AM' && hours === 12) {
+      hours = 0;
+    }
+    return `${String(hours).padStart(2, '0')}:${minutes}`;
+  }
+  const p = str.split(':');
+  return p.length >= 2 ? `${p[0].padStart(2, '0')}:${p[1].padStart(2, '0')}` : str;
+};
+
 const AlarmContext = createContext(null);
 
 export const AlarmProvider = ({ children }) => {
@@ -80,6 +101,17 @@ export const AlarmProvider = ({ children }) => {
       }
     };
   }, [alarms]);
+
+  // Keep background audio session alive on mobile (iOS PWA / Web) when any alarm is active
+  useEffect(() => {
+    const activeList = alarms.filter(a => a && a.active);
+    if (activeList.length > 0 && !ringingAlarm) {
+      console.log(`[AlarmContext] 🛡️ Active alarm present (${activeList[0].time}), starting keep-alive audio session.`);
+      audioEngine.startKeepAlive(`Next alarm: ${activeList[0].time}`);
+    } else if (activeList.length === 0) {
+      audioEngine.stopKeepAlive();
+    }
+  }, [alarms, ringingAlarm]);
 
   // Load private alarm data when account has an active subscription or 7-day free trial.
   useEffect(() => {
@@ -165,18 +197,22 @@ export const AlarmProvider = ({ children }) => {
             } catch {}
           }
 
-          const normalize = (t) => {
-            if (!t) return '';
-            const p = String(t).trim().split(':');
-            return p.length >= 2 ? `${p[0].padStart(2, '0')}:${p[1].padStart(2, '0')}` : String(t);
-          };
+          // Use the shared normalizeTime helper for robust HH:MM comparison
+          const normalizedAlarmTime = normalizeTime(a.time);
+          const normalizedCurrentTime = normalizeTime(alarmTimeStr);
 
-          if (normalize(a.time) !== normalize(alarmTimeStr)) return false;
+          // Debug: log every second for active alarms only on the final 2 seconds of a minute
+          if (now.getSeconds() >= 58) {
+            console.log(`[AlarmChecker] ⏰ Checking alarm "${a.label}" | alarm time: ${normalizedAlarmTime} | current time: ${normalizedCurrentTime} | day: ${alarmDay} | alarm days: ${(a.days || []).join(',') || 'any'}`);
+          }
+
+          if (normalizedAlarmTime !== normalizedCurrentTime) return false;
           if (a.days && a.days.length > 0 && !a.days.includes(alarmDay)) return false;
           return true;
         });
 
         if (matching) {
+          console.log(`[AlarmChecker] 🚨 ALARM MATCHED! Triggering alarm: "${matching.label}" at ${matching.time}`);
           lastTriggeredMinuteRef.current = timeStr;
           triggerAlarm(matching);
         }
@@ -276,15 +312,17 @@ export const AlarmProvider = ({ children }) => {
 
   // Trigger Alarm
   const triggerAlarm = (alarm) => {
+    console.log(`[AlarmContext] 🔔 triggerAlarm called for: "${alarm.label}" at ${alarm.time}`);
     setRingingAlarm(alarm);
-    // 1. Play sound & transition background audio session to audible chime
+    // 1. Transition background audio session to audible chime (needs audio unlocked by prior user click)
     audioEngine.triggerBackgroundAudibleChime();
+    // 2. Play the actual alarm sound (HTML5 + synth fallback)
     audioEngine.playAlarmSound(alarm.soundId || 'gentle_chimes', api.resolveAssetUrl(alarm.customSoundUrl));
 
-    // 2. Ring/vibrate & show system notification on phone
+    // 3. Ring/vibrate & show system notification on phone
     notificationService.showAlarmNotification(alarm);
 
-    // 3. Play dynamic voice greeting if enabled
+    // 4. Play dynamic voice greeting if enabled
     if (alarm.speechGreeting !== false) {
       setTimeout(() => {
         const timeGreeting = speechService.getTimeBasedGreeting();

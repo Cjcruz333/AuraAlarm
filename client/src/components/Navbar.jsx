@@ -8,7 +8,6 @@ import {
   Heart, 
   Fingerprint, 
   Share2, 
-  Calendar, 
   Mail, 
   Flame, 
   ShieldCheck,
@@ -24,6 +23,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { useAlarm } from '../context/AlarmContext.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
+import { nativeAlarmService } from '../services/nativeAlarm.js';
 import { api } from '../services/api.js';
 
 export const Navbar = ({ 
@@ -31,7 +31,6 @@ export const Navbar = ({
   setActiveTab, 
   onOpenBiometrics, 
   onOpenFeedback, 
-  onOpenCalendar, 
   onOpenShare,
   onOpenInstall,
   onOpenUpgrade,
@@ -80,6 +79,14 @@ export const Navbar = ({
     ? Math.max(0, Math.ceil((Date.parse(user.trialEndsAt) - Date.now()) / 86_400_000))
     : 0;
 
+  // Detect if already installed/running as native Android app
+  const isAndroidInstalled = (() => {
+    if (typeof window === 'undefined') return false;
+    return nativeAlarmService.isAndroidNative() || (
+      window.matchMedia?.('(display-mode: standalone)')?.matches && /android/i.test(navigator.userAgent)
+    );
+  })();
+
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 pwa-safe-area-top">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -118,7 +125,18 @@ export const Navbar = ({
 
           {/* Right Action Icons & Streak */}
           <div className="hidden xl:flex items-center gap-2">
-            
+            {!isAndroidInstalled && (
+              <a
+                href="/auraalarm.apk"
+                download="auraalarm.apk"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/35 text-indigo-300 border border-indigo-500/40 text-xs font-bold transition-all shadow-sm"
+                title="Download AuraAlarm Android APK"
+              >
+                <Smartphone className="w-4 h-4 text-indigo-400" />
+                <span>Get Android App</span>
+              </a>
+            )}
+
             {/* VIP PRO / Upgrade Membership / Trial Button */}
             <button
               onClick={onOpenUpgrade}
@@ -164,15 +182,6 @@ export const Navbar = ({
               title="Share Streak & Milestone"
             >
               <Share2 className="w-4 h-4" />
-            </button>
-
-            {/* Calendar Export */}
-            <button
-              onClick={onOpenCalendar}
-              className="p-2 rounded-xl bg-slate-800/60 text-slate-300 hover:text-white hover:bg-slate-700/60 border border-slate-700/50 transition-colors"
-              title="Export to Calendar (.ics)"
-            >
-              <Calendar className="w-4 h-4" />
             </button>
 
             {/* Feedback / Support Inquiry */}
@@ -240,7 +249,19 @@ export const Navbar = ({
 
           </div>
 
-          <div className="relative flex xl:hidden items-center gap-2 shrink-0">
+          <div className="relative flex xl:hidden items-center gap-1.5 sm:gap-2 shrink-0">
+            {!isAndroidInstalled && (
+              <a
+                href="/auraalarm.apk"
+                download="auraalarm.apk"
+                className="flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold bg-indigo-600/25 hover:bg-indigo-600/35 text-indigo-300 border border-indigo-500/40 transition-colors shadow-sm"
+                title="Download AuraAlarm Android App (.apk)"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-indigo-400" />
+                <span className="hidden xs:inline">Get App</span>
+                <span className="xs:hidden">App</span>
+              </a>
+            )}
             <button
               onClick={onOpenUpgrade}
               className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-2 rounded-xl text-xs font-extrabold shadow-md ${
@@ -272,6 +293,16 @@ export const Navbar = ({
 
             {isMobileMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-700 bg-slate-950 p-2 shadow-2xl z-50">
+                {!isAndroidInstalled && (
+                  <a
+                    href="/auraalarm.apk"
+                    download="auraalarm.apk"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm font-semibold text-indigo-300 hover:bg-slate-800 transition-colors"
+                  >
+                    <Smartphone className="w-4 h-4 text-indigo-400" /> Download Android App
+                  </a>
+                )}
                 <button
                   onClick={() => { setActiveTab('stats'); setIsMobileMenuOpen(false); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-amber-300 hover:bg-slate-800"
@@ -283,12 +314,6 @@ export const Navbar = ({
                   className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"
                 >
                   <Share2 className="w-4 h-4" /> Share streak
-                </button>
-                <button
-                  onClick={() => { onOpenCalendar(); setIsMobileMenuOpen(false); }}
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-sm text-slate-200 hover:bg-slate-800"
-                >
-                  <Calendar className="w-4 h-4" /> Calendar
                 </button>
                 <button
                   onClick={() => { onOpenFeedback(); setIsMobileMenuOpen(false); }}

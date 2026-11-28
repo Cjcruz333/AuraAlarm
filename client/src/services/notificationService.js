@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
+import { nativeAlarmService } from './nativeAlarm.js';
 
 const ALARM_CHANNEL_ID = 'aura-alarms-v2';
 const REMINDER_CHANNEL_ID = 'aura-reminders-v2';
@@ -151,9 +152,26 @@ class NotificationService {
    */
   getNextTriggerDate(alarm, now = new Date()) {
     if (!alarm?.active || !alarm?.time) return null;
-    const [hourStr, minStr] = String(alarm.time).split(':');
-    const targetHour = Number(hourStr);
-    const targetMin = Number(minStr);
+
+    // Normalize time in case it has AM/PM or single digit hour
+    const str = String(alarm.time).trim();
+    const match = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+    let targetHour = NaN;
+    let targetMin = NaN;
+    if (match) {
+      let h = parseInt(match[1], 10);
+      const m = parseInt(match[2], 10);
+      const modifier = match[3] ? match[3].toUpperCase() : null;
+      if (modifier === 'PM' && h < 12) h += 12;
+      else if (modifier === 'AM' && h === 12) h = 0;
+      targetHour = h;
+      targetMin = m;
+    } else {
+      const [hourStr, minStr] = str.split(':');
+      targetHour = Number(hourStr);
+      targetMin = Number(minStr);
+    }
+
     if (!Number.isInteger(targetHour) || !Number.isInteger(targetMin)) return null;
 
     const allowedDays = Array.isArray(alarm.days) && alarm.days.length > 0 ? alarm.days : null;
@@ -217,6 +235,28 @@ class NotificationService {
     const permission = await this.getPermissionStatus();
     const activeAlarms = (alarms || []).filter(a => a && a.active);
     const now = new Date();
+
+    // Native Android exact AlarmManager.setAlarmClock synchronization
+    if (nativeAlarmService.isAndroidNative()) {
+      try {
+        const nativePayload = [];
+        for (const alarm of activeAlarms) {
+          const triggerAt = this.getNextTriggerDate(alarm, now);
+          if (!triggerAt) continue;
+          nativePayload.push({
+            id: alarm.id,
+            triggerTime: triggerAt.getTime(),
+            label: alarm.label || 'Wake-Up Call',
+            sound: alarm.soundName || 'alarm_chime',
+            days: alarm.days || [],
+            active: true
+          });
+        }
+        await nativeAlarmService.syncAlarms(nativePayload);
+      } catch (err) {
+        console.warn('NativeAlarm exact sync failed:', err);
+      }
+    }
 
     if (this.isNative()) {
       if (permission !== 'granted') return;

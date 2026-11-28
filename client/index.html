@@ -2,19 +2,51 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7581987991430488"
-      crossorigin="anonymous"></script>
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8KSKQG6JWG"></script>
+    <!-- Cookie Consent: AdSense & Analytics load only after user consent -->
     <script>
       window.dataLayer = window.dataLayer || [];
       function gtag() { window.dataLayer.push(arguments); }
       window.gtag = gtag;
+      gtag('consent', 'default', {
+        ad_storage: 'denied',
+        ad_user_data: 'denied',
+        ad_personalization: 'denied',
+        analytics_storage: 'denied',
+      });
+
+      (function () {
+        var saved = localStorage.getItem('aura_cookie_consent');
+        if (saved === 'accepted') {
+          gtag('consent', 'update', {
+            ad_storage: 'granted',
+            ad_user_data: 'granted',
+            ad_personalization: 'granted',
+            analytics_storage: 'granted',
+          });
+        }
+      })();
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8KSKQG6JWG"></script>
+    <script>
       gtag('js', new Date());
       gtag('config', 'G-8KSKQG6JWG', {
         send_page_view: false,
         page_location: window.location.origin,
         page_referrer: document.referrer ? new URL(document.referrer).origin : '',
       });
+    </script>
+    <script>
+      // Load AdSense only after consent
+      (function () {
+        var saved = localStorage.getItem('aura_cookie_consent');
+        if (saved === 'accepted') {
+          var s = document.createElement('script');
+          s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7581987991430488';
+          s.async = true;
+          s.crossOrigin = 'anonymous';
+          document.head.appendChild(s);
+        }
+      })();
     </script>
     <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
@@ -50,7 +82,7 @@
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "AuraAlarm",
-      "alternateName": ["Aura Alarm", "AuraAlarm Pro", "AuraAlarm Mobile"],
+      "alternateName": ["Aura Alarm", "AuraAlarm VIP", "AuraAlarm Mobile"],
       "url": "%VITE_SITE_URL%/",
       "applicationCategory": "HealthApplication",
       "operatingSystem": "All",
@@ -80,7 +112,71 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   </head>
   <body class="bg-[#0a0d14] text-slate-100 font-sans antialiased selection:bg-indigo-500 selection:text-white min-h-screen">
-    <div id="root"></div>
+    <noscript>
+      <div style="padding: 24px; text-align: center; color: #94a3b8; font-family: sans-serif;">
+        <h1 style="color: #fff; font-size: 24px; margin-bottom: 8px;">AuraAlarm (Aura Alarm)</h1>
+        <p style="font-size: 16px; margin-bottom: 12px;">Smart Alarm Clock, World Clock, VIP Sleep Aid Soundscapes & Circadian Rhythm Support.</p>
+        <p style="font-size: 14px;">JavaScript is required to run the interactive alarm application. Please enable JavaScript in your browser.</p>
+        <div style="margin-top: 16px;">
+          <a href="/about.html" style="color: #6366f1; margin: 0 10px;">About</a>
+          <a href="/privacy.html" style="color: #6366f1; margin: 0 10px;">Privacy Policy</a>
+          <a href="/terms.html" style="color: #6366f1; margin: 0 10px;">Terms of Service</a>
+        </div>
+      </div>
+    </noscript>
+    <div id="root">
+      <main style="display:none;" aria-hidden="true">
+        <h1>AuraAlarm - Smart Alarm, World Clock & Circadian Wellness</h1>
+        <p>AuraAlarm is a minimalist smart alarm, world clock, sleep soundscape, and circadian wellness web platform featuring end-to-end encryption.</p>
+        <section>
+          <h2>Key Features</h2>
+          <ul>
+            <li>Smart Alarm &amp; World Clock: Designed for time tracking and wake-up routines with a minimalist interface.</li>
+            <li>Sleep &amp; Circadian Wellness: Includes VIP sleep aid soundscapes, 528Hz solfeggio frequencies, and circadian rhythm support.</li>
+            <li>Privacy: Uses client-side encryption for user data.</li>
+          </ul>
+        </section>
+      </main>
+    </div>
+    <!-- Cookie Consent Banner -->
+    <div id="aura-cookie-banner" style="display:none;position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#111827;border-top:1px solid #1f293d;padding:14px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+      <div style="max-width:900px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
+        <p style="margin:0;color:#94a3b8;font-size:13px;flex:1 1 300px;line-height:1.5;">
+          We use cookies for analytics and personalized ads. You can accept or decline.
+          <a href="/privacy.html" style="color:#6366f1;text-decoration:none;">Privacy Policy</a>
+        </p>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button onclick="auraCookieConsent('declined')" style="padding:8px 16px;border-radius:10px;border:1px solid #374151;background:transparent;color:#e2e8f0;font-size:13px;font-weight:600;cursor:pointer;">Decline</button>
+          <button onclick="auraCookieConsent('accepted')" style="padding:8px 16px;border-radius:10px;border:none;background:#6366f1;color:#fff;font-size:13px;font-weight:600;cursor:pointer;">Accept</button>
+        </div>
+      </div>
+    </div>
+    <script>
+      function auraCookieConsent(choice) {
+        localStorage.setItem('aura_cookie_consent', choice);
+        document.getElementById('aura-cookie-banner').style.display = 'none';
+        if (choice === 'accepted') {
+          gtag('consent', 'update', {
+            ad_storage: 'granted',
+            ad_user_data: 'granted',
+            ad_personalization: 'granted',
+            analytics_storage: 'granted',
+          });
+          // Load AdSense
+          var s = document.createElement('script');
+          s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7581987991430488';
+          s.async = true;
+          s.crossOrigin = 'anonymous';
+          document.head.appendChild(s);
+        }
+      }
+      (function () {
+        var saved = localStorage.getItem('aura_cookie_consent');
+        if (!saved) {
+          document.getElementById('aura-cookie-banner').style.display = 'block';
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
     <script src="https://js.paystack.co/v1/inline.js" async defer></script>
     <script>

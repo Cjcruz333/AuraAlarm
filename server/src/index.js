@@ -39,11 +39,15 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 // Static uploads directory
 app.use('/uploads', express.static(UPLOADS_DIR));
 
-// Do not distribute unsigned or unverified Android packages from the app.
-app.get(['/api/download/app', '/download/app', '/download/auraalarm.apk'], (req, res) => {
-  res.status(410).json({
-    error: "Direct APK downloads are unavailable. Install AuraAlarm from this website using your browser's Add to Home Screen option."
-  });
+// Download Android APK
+app.get(['/api/download/app', '/download/app', '/download/auraalarm.apk', '/auraalarm.apk'], (req, res) => {
+  const publicApk = path.join(__dirname, '../../client/public/auraalarm.apk');
+  const distApk = path.join(CLIENT_DIST, 'auraalarm.apk');
+  const apkPath = fs.existsSync(distApk) ? distApk : publicApk;
+  if (fs.existsSync(apkPath)) {
+    return res.download(apkPath, 'auraalarm.apk');
+  }
+  res.status(404).json({ error: 'Android APK build is not currently available.' });
 });
 
 // API Routes

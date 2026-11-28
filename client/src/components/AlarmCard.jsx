@@ -3,6 +3,8 @@ import { Volume2, Heart, Play, Edit3, Trash2, Globe, Clock, Sun, Moon } from 'lu
 import { useSettings } from '../context/SettingsContext.jsx';
 import { notificationService } from '../services/notificationService.js';
 
+const FULL_DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
 export const AlarmCard = ({ alarm, onToggle, onEdit, onDelete, onTest, onToggleAmPm }) => {
   const { t, formatTime } = useSettings();
   const allDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -15,17 +17,29 @@ export const AlarmCard = ({ alarm, onToggle, onEdit, onDelete, onTest, onToggleA
     if (!alarm.active) return t('Alarm is disabled');
     const nextDate = notificationService.getNextTriggerDate(alarm);
     if (!nextDate) return t('No scheduled days');
-    const diffMs = nextDate.getTime() - Date.now();
+    const now = new Date();
+    const diffMs = nextDate.getTime() - now.getTime();
     if (diffMs <= 0) return t('Rings in less than a minute');
     const totalMinutes = Math.round(diffMs / (60 * 1000));
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
-    const isToday = nextDate.getDate() === new Date().getDate();
 
-    if (hours === 0) {
-      return `⏰ Rings ${isToday ? 'today' : 'tomorrow'} in ${mins}m`;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfTarget = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate()).getTime();
+    const dayDiff = Math.round((startOfTarget - startOfToday) / (24 * 60 * 60 * 1000));
+
+    let dayLabel = 'today';
+    if (dayDiff === 1 && diffMs <= 36 * 60 * 60 * 1000) {
+      dayLabel = 'tomorrow';
+    } else if (dayDiff > 1 || diffMs > 24 * 60 * 60 * 1000) {
+      dayLabel = FULL_DAY_NAMES[nextDate.getDay()];
     }
-    return `⏰ Rings ${isToday ? 'today' : 'tomorrow'} in ${hours}h ${mins}m`;
+
+    const timeSpan = hours === 0
+      ? `${mins}m`
+      : (mins === 0 ? `${hours}h` : `${hours}h ${mins}m`);
+
+    return `⏰ Rings ${dayLabel} in ${timeSpan}`;
   })();
 
   return (

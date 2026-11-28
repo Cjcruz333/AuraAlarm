@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Clock, Volume2, Upload, Heart, Lock, Sparkles, Check, Globe, ChevronUp, ChevronDown, Sun, Moon } from 'lucide-react';
 import { api } from '../services/api.js';
 import { cryptoService } from '../services/cryptoService.js';
+import { audioEngine } from '../services/audioService.js';
+import { notificationService } from '../services/notificationService.js';
 import { WORLD_COUNTRIES } from './WorldClock.jsx';
 import { useSettings } from '../context/SettingsContext.jsx';
 import { useAlarm } from '../context/AlarmContext.jsx';
@@ -64,7 +66,8 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
       const targetH = targetM < now.getMinutes() ? (currentH + 1) % 24 : currentH;
       setTime(`${String(targetH).padStart(2, '0')}:${String(targetM).padStart(2, '0')}`);
       setLabel('Rise & Conquer');
-      setDays(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+      // Default to all 7 days so it rings today on any day of the week
+      setDays(['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']);
       const selectedSound = builtInSounds.find(sound => sound.id === defaultAlarmSound) || builtInSounds[0];
       setSoundId(selectedSound.id);
       setSoundName(selectedSound.name);
@@ -83,38 +86,59 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
   // Compute live countdown to when the currently selected time will ring
   const getModalCountdown = () => {
     if (!time) return '';
-    const [hStr, mStr] = time.split(':');
-    const targetH = parseInt(hStr, 10);
-    const targetM = parseInt(mStr, 10);
-    if (isNaN(targetH) || isNaN(targetM)) return '';
-
     const now = new Date();
-    const candidate = new Date(now);
-    candidate.setHours(targetH, targetM, 0, 0);
+    const nextDate = notificationService.getNextTriggerDate({
+      active: true,
+      time,
+      days,
+      timezone
+    }, now);
 
-    let isToday = true;
-    if (candidate.getTime() <= now.getTime()) {
-      candidate.setDate(candidate.getDate() + 1);
-      isToday = false;
-    }
+    if (!nextDate) return 'No scheduled days';
 
-    const diffMs = candidate.getTime() - now.getTime();
-    const totalMinutes = Math.round(diffMs / 60000);
+    const diffMs = nextDate.getTime() - now.getTime();
+    if (diffMs <= 0) return 'Rings in less than a minute';
+
+    const totalMinutes = Math.round(diffMs / (60 * 1000));
     const hours = Math.floor(totalMinutes / 60);
     const mins = totalMinutes % 60;
 
-    if (hours === 0) {
-      return `Rings ${isToday ? 'today' : 'tomorrow'} in ${mins}m`;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const startOfTarget = new Date(nextDate.getFullYear(), nextDate.getMonth(), nextDate.getDate()).getTime();
+    const dayDiff = Math.round((startOfTarget - startOfToday) / (24 * 60 * 60 * 1000));
+
+    let dayLabel = 'today';
+    if (dayDiff === 1 && diffMs <= 36 * 60 * 60 * 1000) {
+      dayLabel = 'tomorrow';
+    } else if (dayDiff > 1 || diffMs > 24 * 60 * 60 * 1000) {
+      const fullDayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][nextDate.getDay()];
+      dayLabel = fullDayName;
     }
-    return `Rings ${isToday ? 'today' : 'tomorrow'} in ${hours}h ${mins}m`;
+
+    const timeSpan = hours === 0
+      ? `${mins}m`
+      : (mins === 0 ? `${hours}h` : `${hours}h ${mins}m`);
+
+    return `Rings ${dayLabel} in ${timeSpan}`;
   };
 
   const setTimeToNextMinutes = (minsAhead = 2) => {
+    audioEngine.unlockAudio();
     const now = new Date();
     const currentH = now.getHours();
     const targetM = (now.getMinutes() + minsAhead) % 60;
     const targetH = targetM < now.getMinutes() ? (currentH + 1) % 24 : currentH;
     setTime(`${String(targetH).padStart(2, '0')}:${String(targetM).padStart(2, '0')}`);
+    // Always include today's day so the instant test rings today!
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const todayAbbr = dayNames[now.getDay()];
+    setDays(prev => {
+      const currentDays = Array.isArray(prev) ? prev : [];
+      if (!currentDays.includes(todayAbbr)) {
+        return [...currentDays, todayAbbr];
+      }
+      return currentDays;
+    });
   };
 
   // Convert 24h string ('14:30') to 12h representation
@@ -231,6 +255,10 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // 1. Synchronously unlock audio inside user click handler before any await
+    console.log('[AlarmEditModal] ⏰ Save Alarm submitted. Unlocking audio for time:', time, 'label:', label);
+    audioEngine.unlockAudio();
 
     // Client-side encrypt note if present
     let encryptedNotes = '';
@@ -770,6 +798,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
               </button>
               <button
                 type="submit"
+                onClick={() => audioEngine.unlockAudio()}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white text-xs sm:text-sm font-bold shadow-lg shadow-indigo-600/30 transition-all active:scale-95"
               >
                 <Sparkles className="w-4 h-4 text-amber-300" />
