@@ -79,6 +79,13 @@ export const Navbar = ({
     ? Math.max(0, Math.ceil((Date.parse(user.trialEndsAt) - Date.now()) / 86_400_000))
     : 0;
 
+  // Detect if running on iOS (iPhone / iPad / iPod) where Android APK download should be hidden
+  const isIOS = (() => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  })();
+
   // Detect if already installed/running as native Android app
   const isAndroidInstalled = (() => {
     if (typeof window === 'undefined') return false;
@@ -86,6 +93,9 @@ export const Navbar = ({
       window.matchMedia?.('(display-mode: standalone)')?.matches && /android/i.test(navigator.userAgent)
     );
   })();
+
+  // Show Android download only on Android and Desktop (hide on iOS or if already installed)
+  const showAndroidDownload = !isIOS && !isAndroidInstalled;
 
   return (
     <header className="sticky top-0 z-40 w-full glass-panel border-b border-slate-800/80 pwa-safe-area-top">
@@ -125,7 +135,7 @@ export const Navbar = ({
 
           {/* Right Action Icons & Streak */}
           <div className="hidden xl:flex items-center gap-2">
-            {!isAndroidInstalled && (
+            {showAndroidDownload && (
               <a
                 href="/auraalarm.apk"
                 download="auraalarm.apk"
@@ -250,7 +260,7 @@ export const Navbar = ({
           </div>
 
           <div className="relative flex xl:hidden items-center gap-1.5 sm:gap-2 shrink-0">
-            {!isAndroidInstalled && (
+            {showAndroidDownload && (
               <a
                 href="/auraalarm.apk"
                 download="auraalarm.apk"
@@ -293,7 +303,7 @@ export const Navbar = ({
 
             {isMobileMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-56 rounded-2xl border border-slate-700 bg-slate-950 p-2 shadow-2xl z-50">
-                {!isAndroidInstalled && (
+                {showAndroidDownload && (
                   <a
                     href="/auraalarm.apk"
                     download="auraalarm.apk"

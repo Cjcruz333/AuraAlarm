@@ -10,7 +10,8 @@ import { useAlarm } from '../context/AlarmContext.jsx';
 
 export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
   const { clockFormat, defaultAlarmSound, formatTime } = useSettings();
-  const { notificationPermission, requestNotificationPermission } = useAlarm();
+  const { alarms, notificationPermission, requestNotificationPermission } = useAlarm();
+  const [alarmId, setAlarmId] = useState(alarmToEdit?.id || null);
   const [time, setTime] = useState('06:30');
   const [label, setLabel] = useState('Morning Rise & Shine');
   const [days, setDays] = useState(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
@@ -37,6 +38,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
 
   useEffect(() => {
     if (alarmToEdit) {
+      setAlarmId(alarmToEdit.id || null);
       setTime(alarmToEdit.time || '06:30');
       setLabel(alarmToEdit.label || '');
       setDays(alarmToEdit.days || []);
@@ -59,6 +61,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
         setSecretNote('');
       }
     } else {
+      setAlarmId(null);
       // Default new alarms to current time + 2 minutes (auto-detecting AM/PM)
       const now = new Date();
       const currentH = now.getHours();
@@ -129,6 +132,18 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
     const targetM = (now.getMinutes() + minsAhead) % 60;
     const targetH = targetM < now.getMinutes() ? (currentH + 1) % 24 : currentH;
     setTime(`${String(targetH).padStart(2, '0')}:${String(targetM).padStart(2, '0')}`);
+    setLabel('Instant Test Alarm');
+
+    // If an existing test alarm exists in the alarms list and we are creating a new one, reuse its ID to update it
+    if (!alarmId && Array.isArray(alarms)) {
+      const existingTestAlarm = alarms.find(a => 
+        a.id && (/instant test/i.test(a.label) || /test alarm/i.test(a.label))
+      );
+      if (existingTestAlarm) {
+        setAlarmId(existingTestAlarm.id);
+      }
+    }
+
     // Always include today's day so the instant test rings today!
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const todayAbbr = dayNames[now.getDay()];
@@ -267,7 +282,7 @@ export const AlarmEditModal = ({ isOpen, onClose, alarmToEdit, onSave }) => {
     }
 
     const payload = {
-      ...(alarmToEdit?.id ? { id: alarmToEdit.id } : {}),
+      ...(alarmId || alarmToEdit?.id ? { id: alarmId || alarmToEdit.id } : {}),
       time,
       timezone,
       label,
